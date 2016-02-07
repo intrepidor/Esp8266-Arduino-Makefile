@@ -16,6 +16,7 @@ Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/
 
 #dependencies
 - this project uses the last esp8266/Arduino repository (not stable) and the last stagging esptool and xtensa-lx106 toolchain
+- Requires Perl YAML. Install from cygwin setup tool.
 
 ## TODO
 - build user libs in their own directory to avoid problems with multiple files with same name.

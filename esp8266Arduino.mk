@@ -1,37 +1,40 @@
 TARGET = $(notdir $(realpath .))
-ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+#ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+ROOT_DIR := /cygdrive/g/git_personal/PersonalSoftware/Arduino_ESP8266/Esp8266-Arduino-Makefile__Intrepidor_GitHub
 
-SERIAL_PORT ?= /dev/tty.nodemcu
+SERIAL_PORT ?= COM2
 
-ARDUINO_HOME ?=  $(ROOT_DIR)/esp8266
+ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
+ESP_HOME ?= $(ARDUINO_HOME)/hardware/esp8266com/esp8266
 ARDUINO_ARCH = esp8266
 ARDUINO_BOARD ?= ESP8266_ESP12
 ARDUINO_VARIANT ?= nodemcu
 ARDUINO_VERSION ?= 10605
 #ESPTOOL_VERBOSE ?= -vv
 
-BOARDS_TXT  = $(ARDUINO_HOME)/boards.txt
+BOARDS_TXT  = $(ARDUINO_HOME)/hardware/esp8266com/esp8266/boards.txt
 PARSE_BOARD = $(ROOT_DIR)/bin/ard-parse-boards
 PARSE_BOARD_OPTS = --boards_txt=$(BOARDS_TXT)
-PARSE_BOARD_CMD = $(PARSE_BOARD) $(PARSE_BOARD_OPTS)
+PARSE_BOARD_CMD = perl $(PARSE_BOARD) $(PARSE_BOARD_OPTS)
 
-VARIANT = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.variant)
-MCU   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
-SERIAL_BAUD   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
-F_CPU = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
-FLASH_SIZE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
-FLASH_MODE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
-FLASH_FREQ = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
+VARIANT            = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.variant)
+MCU                = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
+SERIAL_BAUD        = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+F_CPU              = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
+FLASH_SIZE         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
+FLASH_MODE         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
+FLASH_FREQ         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
 UPLOAD_RESETMETHOD = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.resetmethod)
-UPLOAD_SPEED = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+UPLOAD_SPEED       = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 
 # sketch-specific
 USER_LIBDIR ?= ./libraries
 
 XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
-ESPRESSIF_SDK = $(ARDUINO_HOME)/tools/sdk
+ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
+
 ESPTOOL ?= $(ROOT_DIR)/bin/esptool
-ESPOTA ?= $(ARDUINO_HOME)/tools/espota.py
+ESPOTA ?= $(ESP_HOME)/tools/espota.py
 
 BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 
@@ -208,3 +211,84 @@ term:
 print-%: ; @echo $* = $($*)
 
 -include $(OBJ_FILES:.o=.d)
+
+printall:
+	@echo ""
+	@echo "### DIRECTORIES ###"
+	@echo "TARGET=$(TARGET)"
+	@echo "ROOT_DIR=$(ROOT_DIR)"
+	@echo "ARDUINO_HOME=$(ARDUINO_HOME)"
+	@echo "ARDUINO_LIBS=$(ARDUINO_LIBS)"
+	@echo "ESP_HOME=$(ESP_HOME)"
+	@echo "XTENSA_TOOLCHAIN=$(XTENSA_TOOLCHAIN)"
+	@echo "ESPRESSIF_SDK=$(ESPRESSIF_SDK)"
+	@echo "BUILD_OUT=$(BUILD_OUT)"
+	@echo "ULIBDIRS=$(ULIBDIRS)"
+	@echo "ALIBDIRS=$(ALIBDIRS)"
+	@echo "USER_LIBDIR=$(USER_LIBDIR)"
+	@echo "USER_LIBS=$(USER_LIBS)"
+	@echo ""
+	@echo "### FILES AND TOOLS ###"
+	@echo "BOARDS_TXT=$(BOARDS_TXT)"
+	@echo "PARSE_BOARD=$(PARSE_BOARD)"
+	@echo "ESPTOOL=$(ESPTOOL)"
+	@echo "ESPOTA=$(ESPOTA)"
+	@echo "AR=$(AR)"
+	@echo "CAT=$(CAT)"
+	@echo "CC=$(CC)"
+	@echo "CXX=$(CXX)"
+	@echo "LD=$(LD)"
+	@echo "OBJDUMP=$(OBJDUMP)"
+	@echo "SIZE=$(SIZE)"
+	@echo ""
+	@echo "### ATTRIBUTES ###"
+	@echo "ARDUINO_ARCH=$(ARDUINO_ARCH)"
+	@echo "ARDUINO_BOARD=$(ARDUINO_BOARD)"
+	@echo "ARDUINO_VARIANT=$(ARDUINO_VARIANT)"
+	@echo "ARDUINO_VERSION=$(ARDUINO_VERSION)"
+	@echo "SERIAL_PORT=$(SERIAL_PORT)"
+	@echo "VARIANT=$(VARIANT)"
+	@echo "MCU=$(MCU)"
+	@echo "SERIAL_BAUD=$(SERIAL_BAUD)"
+	@echo "F_CPU=$(F_CPU)"
+	@echo "FLASH_SIZE=$(FLASH_SIZE)"
+	@echo "FLASH_MODE=$(FLASH_MODE)"
+	@echo "FLASH_FREQ=$(FLASH_FREQ)"
+	@echo "UPLOAD_RESETMETHOD=$(UPLOAD_RESETMETHOD)"
+	@echo "UPLOAD_SPEED=$(UPLOAD_SPEED)"
+	@echo ""
+	@echo "### ARGUMENTS AND FLAGS ###"
+	@echo "PARSE_BOARD_OPTS=$(PARSE_BOARD_OPTS)"
+	@echo "PARSE_BOARD_CMD=$(PARSE_BOARD_CMD)"
+	@echo "ASFLAGS=$(ASFLAGS)"
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "CXXFLAGS=$(CXXFLAGS)"
+	@echo "LDFLAGS=$(LDFLAGS)"
+	@echo "DEFINES=$(DEFINES)"
+	@echo ""
+	@echo "### LISTS OF DIRECTORIES ###"
+	@echo "CORE_INC=$(CORE_INC)"
+	@echo "INCLUDES=$(INCLUDES)"
+	@echo "USRCDIRS=$(USRCDIRS)"
+	@echo "VPATH=$(VPATH)"
+	@echo ""
+	@echo "### LISTS OF FILES ###"
+	@echo "CORE_SSRC=$(CORE_SSRC)"
+	@echo "CORE_SRC=$(CORE_SRC)"
+	@echo "CORE_CXXSRC=$(CORE_CXXSRC)"
+	@echo "CORE_OBJS=$(CORE_OBJS)"
+	@echo "LOCAL_SRCS=$(LOCAL_SRCS)"
+	@echo "OBJ_FILES=$(OBJ_FILES)"
+	@echo "LIB_CXXSRC=$(LIB_CXXSRC)"
+	@echo "LIB_INOSRC=$(LIB_INOSRC)"
+	@echo "LIB_SRC=$(LIB_SRC)"
+	@echo "USER_CXXSRC=$(USER_CXXSRC)"
+	@echo "USER_HPPSRC=$(USER_HPPSRC)"
+	@echo "USER_HSRC=$(USER_HSRC)"
+	@echo "USER_SRC=$(USER_SRC)"
+
+
+
+	
+	
+		
