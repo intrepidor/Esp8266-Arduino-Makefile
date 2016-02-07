@@ -1,5 +1,5 @@
-# Esp8266-Arduino-Makefile
-Makefile to build arduino code for ESP8266 under linux (tested on debian X64) and Windows 7 with cygwinx64.
+# Esp8266-Arduino-Makefile-Windows
+Makefile to build arduino code for ESP8266 on Windows 7 with cygwinx64.
 Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/Esp8266-Arduino-Makefile
 
 ## Changelog
@@ -9,11 +9,8 @@ Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/
 - pull Arduino IDE into root directory
 
 ## Installation
-- Clone this repository : `git clone --recursive https://github.com/intrepidor/Esp8266-Arduino-Makefile.git ESP8266-Arduino-Makefile_intrepidor`
-- Install third party tools : 
-   for Windows : `cd Esp8266-Arduino-Makefile_intrepidor && chmod+x install-cygwin.sh`
-   for 64 bits linux : `cd Esp8266-Arduino-Makefile && chmod+x install-x86_64-pc-linux-gnu.sh && ./install-x86_64-pc-linux-gnu.sh && cd ..` 
-   for 32 bits linux : `cd Esp8266-Arduino-Makefile && chmod+x install-i686-pc-linux-gnu.sh && ./install-i686-pc-linux-gnu.sh && cd ..` 
+- Clone this repository : `git clone --recursive https://github.com/intrepidor/Esp8266-Arduino-Makefile.git ESP8266-Arduino-Makefile-Windows`
+- Install third party tools : `cd Esp8266-Arduino-Makefile_intrepidor && chmod+x install-cygwin.sh`
 - In your sketch directory place a Makefile that defines anything that is project specific and follow that with a line `include /path_to_Esp8266-Arduino-Makefile_directory/esp8266Arduino.mk` (see example)
 - `make upload` should build your sketch and upload it...
 
