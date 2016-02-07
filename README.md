@@ -1,40 +1,24 @@
 # Esp8266-Arduino-Makefile
-Makefile to build arduino code for ESP8266 under linux (tested on debian X64).
-Based on Martin Oldfield arduino makefile : http://www.mjoldfield.com/atelier/2009/02/arduino-cli.html
+Makefile to build arduino code for ESP8266 under linux (tested on debian X64) and Windows 7 with cygwinx64.
+Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/Esp8266-Arduino-Makefile
 
 ## Changelog
-08/12/2015 :
-- add install script for 32 bit linux
-- update to esp8266-2.0.0-rc2
-
-04/11/2015 :
-- use zip file from official link (http://arduino.esp8266.com/staging/package_esp8266com_index.json)
-- ESP8266 git submodule removed
-- remove $(ARDUINO_CORE)/variants/$(VARIANT) to include path (not needed)
-
-08/10/2015 : 
-- add $(ARDUINO_CORE)/variants/$(VARIANT) to include path for nodemcuv2
-
-29/09/2015 : 
-- fix README for third party tools installation
-- move post-installation out of the makefile
-
-23/09/2015 : 
-- working dependencies
-- multiple ino files allowed
-- core & spiffs objects build in their own directories
-- autodetect system and user libs used by the sketch
-- Makefile renamed to esp8266Arduino.mk
+07/Feb/2016 : Allan Inda
+- forked from thunderace/Esp8266-Arduino-Makefile (Latest commit bf8cc59  on Dec 8, 2015)
+- added install script for cygwinx64 (tested on Windows 7 Pro)
+- pull Arduino IDE into root directory
 
 ## Installation
-- Clone this repository : `git clone --recursive https://github.com/thunderace/Esp8266-Arduino-Makefile.git`
-- Install third party tools : for 64 bits linux `cd Esp8266-Arduino-Makefile && chmod+x install-x86_64-pc-linux-gnu.sh && ./install-x86_64-pc-linux-gnu.sh && cd ..` 
-                              for 32 bits linux : `cd Esp8266-Arduino-Makefile && chmod+x install-i686-pc-linux-gnu.sh && ./install-i686-pc-linux-gnu.sh && cd ..` 
+- Clone this repository : `git clone --recursive https://github.com/intrepidor/Esp8266-Arduino-Makefile.git ESP8266-Arduino-Makefile_intrepidor`
+- Install third party tools : 
+   for Windows : `cd Esp8266-Arduino-Makefile_intrepidor && chmod+x install-cygwin.sh`
+   for 64 bits linux : `cd Esp8266-Arduino-Makefile && chmod+x install-x86_64-pc-linux-gnu.sh && ./install-x86_64-pc-linux-gnu.sh && cd ..` 
+   for 32 bits linux : `cd Esp8266-Arduino-Makefile && chmod+x install-i686-pc-linux-gnu.sh && ./install-i686-pc-linux-gnu.sh && cd ..` 
 - In your sketch directory place a Makefile that defines anything that is project specific and follow that with a line `include /path_to_Esp8266-Arduino-Makefile_directory/esp8266Arduino.mk` (see example)
 - `make upload` should build your sketch and upload it...
 
 #dependencies
-- this project use the last esp8266/Arduino repository (not stable) and the last stagging esptool and xtensa-lx106 toolchain
+- this project uses the last esp8266/Arduino repository (not stable) and the last stagging esptool and xtensa-lx106 toolchain
 
 ## TODO
 - build user libs in their own directory to avoid problems with multiple files with same name.
