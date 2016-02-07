@@ -1,4 +1,7 @@
 # Esp8266-Arduino-Makefile-Windows
+
+This is still under development.. Not yet working.
+
 Makefile to build arduino code for ESP8266 on Windows 7 with cygwinx64.
 Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/Esp8266-Arduino-Makefile
 
@@ -10,7 +13,7 @@ Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/
 
 ## Installation
 - Clone this repository : `git clone --recursive https://github.com/intrepidor/Esp8266-Arduino-Makefile.git ESP8266-Arduino-Makefile-Windows`
-- Install third party tools : `cd Esp8266-Arduino-Makefile_intrepidor && chmod+x install-cygwin.sh`
+- Install third party tools : `cd Esp8266-Arduino-Makefile-Windows && chmod+x install-cygwin.sh`
 - In your sketch directory place a Makefile that defines anything that is project specific and follow that with a line `include /path_to_Esp8266-Arduino-Makefile_directory/esp8266Arduino.mk` (see example)
 - `make upload` should build your sketch and upload it...
 
