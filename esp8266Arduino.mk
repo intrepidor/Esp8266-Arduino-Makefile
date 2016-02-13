@@ -12,6 +12,7 @@ ARDUINO_VARIANT ?= nodemcu
 ARDUINO_VERSION ?= 10605
 #ESPTOOL_VERBOSE ?= -vv
 
+ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
 BOARDS_TXT  = $(ARDUINO_HOME)/hardware/esp8266com/esp8266/boards.txt
 PARSE_BOARD = $(ROOT_DIR)/bin/ard-parse-boards
 PARSE_BOARD_OPTS = --boards_txt=$(BOARDS_TXT)
@@ -38,11 +39,15 @@ ESPOTA ?= $(ESP_HOME)/tools/espota.py
 
 BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 
-CORE_SSRC = $(wildcard $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/*.S)
-CORE_SRC = $(wildcard $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/*.c)
+#EXAMPLE := $(wildcard */*/*/*.cpp)
+#EX2 = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
+#X2 = $(wildcard /cygdrive/g/git_personal/PersonalSoftware/Arduino_ESP8266/Esp8266-Arduino-Makefile__Intrepidor_GitHub/*)
+
+CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
+CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
 # spiffs files are in a subdirectory
-CORE_SRC += $(wildcard $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/*/*.c)
-CORE_CXXSRC = $(wildcard $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/*.cpp)
+CORE_SRC += $(wildcard $(ESP_CORES)/*/*.c)
+CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
 CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
 
@@ -75,7 +80,7 @@ ULIBDIRS = $(sort $(dir $(wildcard \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*/*.c) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*/*.cpp) \
-	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.cpp)))) 
+	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.cpp))))
 	
 USRCDIRS = .
 # all sources
@@ -102,9 +107,9 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 	-DARDUINO_ARCH_$(shell echo "$(ARDUINO_ARCH)" | tr '[:lower:]' '[:upper:]') \
 	-I$(ESPRESSIF_SDK)/include
 
-CORE_INC = $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH) \
+CORE_INC = $(ESP_CORES) \
 	$(ARDUINO_HOME)/variants/$(VARIANT)
-CORE_INC += $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/spiffs
+CORE_INC += $(ESP_CORES)/spiffs
 
 INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%)
 VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
@@ -132,8 +137,8 @@ CAT	= cat
 
 all: show_variables dirs core libs bin size
 
-show_variables:  
-	$(info [ARDUINO_LIBS] : $(ARDUINO_LIBS)) 
+show_variables:
+	$(info [ARDUINO_LIBS] : $(ARDUINO_LIBS))
 	$(info [USER_LIBS] : $(USER_LIBS))
 
 dirs:
@@ -150,16 +155,16 @@ libs: dirs $(OBJ_FILES)
 
 bin: $(BUILD_OUT)/$(TARGET).bin
 
-$(BUILD_OUT)/core/%.o: $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/%.c
+$(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
-$(BUILD_OUT)/spiffs/%.o: $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/spiffs/%.c
+$(BUILD_OUT)/spiffs/%.o: $(ESP_CORES)/spiffs/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
-$(BUILD_OUT)/core/%.o: $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/%.cpp
+$(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.cpp
 	$(CXX) $(DEFINES) $(CORE_INC:%=-I%) $(CXXFLAGS) -o $@ $<
 
-$(BUILD_OUT)/core/%.S.o: $(ARDUINO_HOME)/cores/$(ARDUINO_ARCH)/%.S
+$(BUILD_OUT)/core/%.S.o: $(ESP_CORES)/%.S
 	$(CC) $(ASFLAGS) -o $@ $<
 
 $(BUILD_OUT)/core/core.a: $(CORE_OBJS)
@@ -194,16 +199,16 @@ size : $(BUILD_OUT)/$(TARGET).elf
 
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
-	$(ESPTOOL) -eo $(ARDUINO_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
+	$(ESPTOOL) -eo $(ESP_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
 		-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
 		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
 
 
 upload: $(BUILD_OUT)/$(TARGET).bin size
-	$(ESPTOOL) $(ESPTOOL_VERBOSE) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) -ca 0x00000 -cf $(BUILD_OUT)/$(TARGET).bin 
+	$(ESPTOOL) $(ESPTOOL_VERBOSE) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) -ca 0x00000 -cf $(BUILD_OUT)/$(TARGET).bin
 
 ota: $(BUILD_OUT)/$(TARGET).bin
-	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin 
+	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin
 
 term:
 	minicom -D $(SERIAL_PORT) -b $(UPLOAD_SPEED)
@@ -220,6 +225,7 @@ printall:
 	@echo "ARDUINO_HOME=$(ARDUINO_HOME)"
 	@echo "ARDUINO_LIBS=$(ARDUINO_LIBS)"
 	@echo "ESP_HOME=$(ESP_HOME)"
+	@echo "ESP_CORES=$(ESP_CORES)"
 	@echo "XTENSA_TOOLCHAIN=$(XTENSA_TOOLCHAIN)"
 	@echo "ESPRESSIF_SDK=$(ESPRESSIF_SDK)"
 	@echo "BUILD_OUT=$(BUILD_OUT)"
@@ -286,9 +292,3 @@ printall:
 	@echo "USER_HPPSRC=$(USER_HPPSRC)"
 	@echo "USER_HSRC=$(USER_HSRC)"
 	@echo "USER_SRC=$(USER_SRC)"
-
-
-
-	
-	
-		
