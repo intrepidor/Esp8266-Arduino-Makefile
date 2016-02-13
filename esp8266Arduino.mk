@@ -2,9 +2,9 @@
 # Tested with version 1.6.5-r5
 
 TARGET = $(notdir $(realpath .))
-#ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 #ROOT_DIR =  $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-ROOT_DIR := /cygdrive/g/git_personal/PersonalSoftware/Arduino_ESP8266/Esp8266-Arduino-Makefile__Intrepidor_GitHub
+#ROOT_DIR := /cygdrive/g/git_personal/PersonalSoftware/Arduino_ESP8266/Esp8266-Arduino-Makefile
 
 # How-to: include this Makefile from a Makefile in you sketch directory
 # In the Sketch's Makefile first define sketch-specific paths, which are defaulted below
