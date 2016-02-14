@@ -29,6 +29,7 @@ Tested with Windows 7 and cygwinx64, and Ubuntu 14.04 x64.
 - mkdir ESP8266
 - cd ESP8266
 - git clone --recursive https://github.com/intrepidor/Esp8266-Arduino-Makefile.git ESP8266-Arduino-Makefile
+- cd ESP8266-Arduino-Makefile
 - ./install-ubuntu.sh
 - cd example/AdvancedWebServer
 - make
