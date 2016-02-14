@@ -1,5 +1,9 @@
 # Script to install and setup environment for ESP8266 Arduino development with Makefiles
 
+# make sure YAML is installed
+#sudo apt-get update
+#sudo apt-get install libconfig-yaml-perl
+
 # save anything that is downloaded for faster reinstalls
 declare DOWNLOAD_CACHE=../download
 mkdir $DOWNLOAD_CACHE
@@ -43,8 +47,7 @@ tar xvf arduino-$ARDUINO_VER-linux64.tar
 rm arduino-$ARDUINO_VER-linux64.tar
 
 # Copy ESP8266_Arduino Libraries
-declare ESP8266_FILE=esp8266-2.0.0-rc2.tar.gz
-declare ESP8266_DIR=esp8266-2.0.0-rc2
-mkdir -p $ARDUINO_VER/hardware/esp8266com
+declare ESP8266_VER=esp8266-2.0.0-rc2
+mkdir -p arduino/$ARDUINO_VER/hardware/esp8266com
 cp -rp $ESP8266_VER $ARDUINO_VER/hardware/esp8266com/esp8266
 
