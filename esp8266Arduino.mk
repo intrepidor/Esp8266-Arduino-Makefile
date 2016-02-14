@@ -1,16 +1,16 @@
-# Makefile for esp8266/arduino on Windows
+# Makefile for esp8266/arduino
 # Tested with version 1.6.5-r5
 
 TARGET = $(notdir $(realpath .))
 ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-#ROOT_DIR =  $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-#ROOT_DIR := /cygdrive/g/git_personal/PersonalSoftware/Arduino_ESP8266/Esp8266-Arduino-Makefile
 
-# How-to: include this Makefile from a Makefile in you sketch directory
-# In the Sketch's Makefile first define sketch-specific paths, which are defaulted below
-USER_LIBDIR   ?= ../libraries
-USER_LIBS     ?=
-ARDUINO_LIBS  ?= 
+################################################################################################
+####
+#### USER STUFF ####
+####
+
+# sketch-specific
+USER_LIBDIR ?= ./libraries
 
 USRCDIRS = .
 USER_SRC = $(wildcard $(addsuffix /*.c,$(USRCDIRS)))
@@ -19,56 +19,85 @@ USER_HSRC = $(wildcard $(addsuffix /*.h,$(USRCDIRS)))
 USER_HPPSRC = $(wildcard $(addsuffix /*.hpp,$(USRCDIRS)))
 LIB_INOSRC = $(wildcard $(addsuffix /*.ino,$(USRCDIRS)))
 
+################################################################################################
+####
+#### ARDUINO and ESP8266
+####
+
 ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
-ESP_HOME ?= $(ARDUINO_HOME)/hardware/esp8266com/esp8266
-ARDUINO_ARCH ?= esp8266
+ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
+ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
+
+CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
+CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
+CORE_SRC += $(wildcard $(ESP_CORES)/*/*.c)
+CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
+CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
+	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
+
+CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs
+
+################################################################################################
+####
+#### TOOLS
+####
+
+XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
+
+ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
+ESPTOOL ?= $(ROOT_DIR)/bin/esptool
+ESPOTA ?= $(ESP_HOME)/tools/espota.py
+#ESPTOOL_VERBOSE ?= -vv
+
+CC := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
+CXX := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-g++
+AR := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-ar
+LD := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
+OBJDUMP := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-objdump
+SIZE := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-size
+CAT	= cat
+SED = sed
+
+################################################################################################
+####
+#### BOARD CONFIGURATION
+####
+
+ARDUINO_ARCH = esp8266
 ARDUINO_BOARD ?= ESP8266_ESP12
 ARDUINO_VARIANT ?= nodemcu
 ARDUINO_VERSION ?= 10605
-SERIAL_PORT   ?= COM2
-#ESPTOOL_VERBOSE ?= -vv
+SERIAL_PORT ?= /dev/tty.nodemcu
 
-######################################################################################################
-
-ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
-BOARDS_TXT = $(ARDUINO_HOME)/hardware/esp8266com/esp8266/boards.txt
+BOARDS_TXT  = $(ESP_HOME)/boards.txt
 PARSE_BOARD = $(ROOT_DIR)/bin/ard-parse-boards
 PARSE_BOARD_OPTS = --boards_txt=$(BOARDS_TXT)
 PARSE_BOARD_CMD = perl $(PARSE_BOARD) $(PARSE_BOARD_OPTS)
 
-VARIANT            = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.variant)
-MCU                = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
-SERIAL_BAUD        = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
-F_CPU              = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
-FLASH_SIZE         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
-FLASH_MODE         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
-FLASH_FREQ         = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
+VARIANT = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.variant)
+MCU   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
+SERIAL_BAUD   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+F_CPU = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
+FLASH_SIZE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
+FLASH_MODE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
+FLASH_FREQ = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
 UPLOAD_RESETMETHOD = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.resetmethod)
-UPLOAD_SPEED      ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+UPLOAD_SPEED = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 
-XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
-ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
-
-ESPTOOL ?= $(ROOT_DIR)/bin/esptool
-ESPOTA ?= $(ESP_HOME)/tools/espota.py
+################################################################################################
+####
+#### INPUTS FILES AND FILE LISTS
+####
 
 BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 
+#autodetect arduino libs and user libs
 LOCAL_SRCS = $(USER_SRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
-
-CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
-CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
-# spiffs files are in a subdirectory
-CORE_SRC += $(wildcard $(ESP_CORES)/*/*.c)
-CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
-CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, $(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
-
-# arduino libraries
-ALIBDIRS = $(sort $(dir $(wildcard \
-	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/*.c) \
-	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/*.cpp) \
-	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/src/*.c) \
-	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/src/*.cpp))))
+ifndef USER_LIBS
+    # automatically determine included user libraries
+    USER_LIBS = $(sort $(filter $(notdir $(wildcard $(USER_LIBDIR)/*)), \
+        $(shell sed -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
+endif
 
 # user libraries and sketch code
 ULIBDIRS = $(sort $(dir $(wildcard \
@@ -78,23 +107,39 @@ ULIBDIRS = $(sort $(dir $(wildcard \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.cpp))))
-	
+
+ifndef ARDUINO_LIBS
+    # automatically determine included libraries
+    ARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ESP_HOME)/libraries/*)), \
+        $(shell sed -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
+endif
+
+# arduino libraries
+ALIBDIRS = $(sort $(dir $(wildcard \
+	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.c) \
+	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
+	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.c) \
+	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
+
+#ALIBDIRS=/home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266WebServer/src/ /home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266WiFi/src/ /home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266mDNS/
+
 # all sources
-LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) \
-	$(wildcard $(addsuffix /*.c,$(ALIBDIRS)))
-LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) \
-	$(wildcard $(addsuffix /*.cpp,$(ALIBDIRS)))
+LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) $(wildcard $(addsuffix /*.c,$(ALIBDIRS)))
+LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) $(wildcard $(addsuffix /*.cpp,$(ALIBDIRS)))
 
 # object files
 OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir $(LIB_SRC:.c=.c.o) $(LIB_CXXSRC:.cpp=.cpp.o) $(LIB_INOSRC:.ino=.ino.o) $(USER_SRC:.c=.c.o) $(USER_CXXSRC:.cpp=.cpp.o)))
+
+################################################################################################
+####
+#### FLAGS
+####
 
 DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERSION) \
 	-DARDUINO_$(ARDUINO_BOARD) -DESP8266 \
 	-DARDUINO_ARCH_$(shell echo "$(ARDUINO_ARCH)" | tr '[:lower:]' '[:upper:]') \
 	-I$(ESPRESSIF_SDK)/include
-
-CORE_INC = $(ESP_CORES) $(ARDUINO_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs
 
 INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%)
 VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
@@ -110,14 +155,10 @@ CXXFLAGS = -c -Os -mlongcalls -mtext-section-literals -fno-exceptions \
 
 LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static -Wl,-wrap,system_restart_local -Wl,-wrap,register_chipv6_phy
 
-CC := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
-CXX := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-g++
-AR := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-ar
-LD := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
-OBJDUMP := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-objdump
-SIZE := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-size
-CAT	= cat
-SED = sed
+################################################################################################
+####
+#### RULES
+####
 
 .PHONY: all arduino dirs clean upload
 
@@ -185,7 +226,7 @@ size : $(BUILD_OUT)/$(TARGET).elf
 
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
-	$(ESPTOOL) -eo $(ESP_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
+	$(ESPTOOL) -eo $(ARDUINO_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
 		-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
 		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
 
@@ -278,3 +319,4 @@ printall:
 	@echo "USER_HPPSRC=$(USER_HPPSRC)"
 	@echo "USER_HSRC=$(USER_HSRC)"
 	@echo "USER_SRC=$(USER_SRC)"
+

@@ -48,6 +48,6 @@ rm arduino-$ARDUINO_VER-linux64.tar
 
 # Copy ESP8266_Arduino Libraries
 declare ESP8266_VER=esp8266-2.0.0-rc2
-mkdir -p arduino/$ARDUINO_VER/hardware/esp8266com
-cp -rp $ESP8266_VER $ARDUINO_VER/hardware/esp8266com/esp8266
+mkdir -p arduino-$ARDUINO_VER/hardware/esp8266com
+cp -rp $ESP8266_VER arduino-$ARDUINO_VER/hardware/esp8266com/esp8266
 
