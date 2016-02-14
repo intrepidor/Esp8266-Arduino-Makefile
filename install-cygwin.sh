@@ -64,7 +64,7 @@ rm esp8266-$ESP8266_VER.zip
 # Copy ESP8266_Arduino Libraries
 echo "Copying Arduino ESP8266 core to Arduino IDE ..."
 mkdir -p arduino-$ARDUINO_VER/hardware/esp8266com
-cp -rp $ESP8266_VER arduino-$ARDUINO_VER/hardware/esp8266com/esp8266
+mv esp8266-$ESP8266_VER arduino-$ARDUINO_VER/hardware/esp8266com/esp8266
 
 #
 echo "All done."
