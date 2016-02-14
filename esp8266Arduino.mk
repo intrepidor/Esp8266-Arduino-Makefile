@@ -226,7 +226,8 @@ size : $(BUILD_OUT)/$(TARGET).elf
 
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
-	$(ESPTOOL) -eo $(ARDUINO_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
+	echo "Building BIN ..."
+	$(ESPTOOL) -eo $(ESP_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
 		-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
 		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
 
