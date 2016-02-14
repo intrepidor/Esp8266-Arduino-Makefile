@@ -121,14 +121,17 @@ ALIBDIRS = $(sort $(dir $(wildcard \
 	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.c) \
 	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
 
-#ALIBDIRS=/home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266WebServer/src/ /home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266WiFi/src/ /home/allan/ESP8266/Esp8266-Arduino-Makefile-thunderace/esp8266/libraries/ESP8266mDNS/
-
 # all sources
 LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) $(wildcard $(addsuffix /*.c,$(ALIBDIRS)))
 LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) $(wildcard $(addsuffix /*.cpp,$(ALIBDIRS)))
 
 # object files
 OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir $(LIB_SRC:.c=.c.o) $(LIB_CXXSRC:.cpp=.cpp.o) $(LIB_INOSRC:.ino=.ino.o) $(USER_SRC:.c=.c.o) $(USER_CXXSRC:.cpp=.cpp.o)))
+
+# includes
+INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%)
+
+VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
 
 ################################################################################################
 ####
@@ -140,9 +143,6 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 	-DARDUINO_$(ARDUINO_BOARD) -DESP8266 \
 	-DARDUINO_ARCH_$(shell echo "$(ARDUINO_ARCH)" | tr '[:lower:]' '[:upper:]') \
 	-I$(ESPRESSIF_SDK)/include
-
-INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%)
-VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
