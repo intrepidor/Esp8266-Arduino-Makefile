@@ -1,12 +1,13 @@
 # Esp8266-Arduino-Makefile
 Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/Esp8266-Arduino-Makefile
 
-This is still under development.. Not yet working.
-
 Creates a Arduino ESP8266 development environment based on Makefiles.
 Tested with Windows 7 and cygwinx64, and Ubuntu 14.04 x64.
 
 ## Changelog
+18/Feb/2016 : Allan Inda
+- Fixed Windows path issues.
+- Both Ubuntu and Cygwin/Windows work
 14/Feb/2016 : Allan Inda
 - forked from thunderace/Esp8266-Arduino-Makefile (Latest commit bf8cc59  on Dec 8, 2015)
 - added install script for cygwinx64 (tested on Windows 7 Pro)
