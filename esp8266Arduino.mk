@@ -2,7 +2,9 @@
 # Tested with version 1.6.5-r5
 
 TARGET = $(notdir $(realpath .))
-ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+ROOT_DIR_CYGWIN := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+# The extensa tools cannot use cygwin paths, so convert /cygdrive/c/abc/... to c:/cygwin64/abc/...
+ROOT_DIR := $(shell cygpath -m $(ROOT_DIR_CYGWIN))
 
 ################################################################################################
 ####
@@ -45,7 +47,7 @@ CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs
 XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
 
 ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
-ESPTOOL ?= $(ROOT_DIR)/bin/esptool
+ESPTOOL ?= $(ROOT_DIR)/bin/esptool.exe
 ESPOTA ?= $(ESP_HOME)/tools/espota.py
 #ESPTOOL_VERBOSE ?= -vv
 
@@ -55,8 +57,34 @@ AR := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
 OBJDUMP := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-objdump
 SIZE := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-size
-CAT	= cat
-SED = sed
+CAT	= cat.exe
+SED = sed.exe
+
+# xtensa-lx106-elf-addr2line.exe
+# xtensa-lx106-elf-ar.exe
+# xtensa-lx106-elf-as.exe
+# xtensa-lx106-elf-c++.exe
+# xtensa-lx106-elf-c++filt.exe
+# xtensa-lx106-elf-cpp.exe
+# xtensa-lx106-elf-elfedit.exe
+# xtensa-lx106-elf-g++.exe
+# xtensa-lx106-elf-gcc.exe
+# xtensa-lx106-elf-gcc-4.8.2.exe
+# xtensa-lx106-elf-gcc-ar.exe
+# xtensa-lx106-elf-gcc-nm.exe
+# xtensa-lx106-elf-gcc-ranlib.exe
+# xtensa-lx106-elf-gcov.exe
+# xtensa-lx106-elf-gprof.exe
+# xtensa-lx106-elf-ld.bfd.exe
+# xtensa-lx106-elf-ld.exe
+# xtensa-lx106-elf-nm.exe
+# xtensa-lx106-elf-objcopy.exe
+# xtensa-lx106-elf-objdump.exe
+# xtensa-lx106-elf-ranlib.exe
+# xtensa-lx106-elf-readelf.exe
+# xtensa-lx106-elf-size.exe
+# xtensa-lx106-elf-strings.exe
+# xtensa-lx106-elf-strip.exe
 
 ################################################################################################
 ####
