@@ -1,4 +1,4 @@
-# Esp8266-Arduino-Makefile
+# Esp8266-Arduino-Makefile for Ubuntu and Cygwin/Windows
 Forked from thunderace/Esp8266-Arduino-Makefile : https://github.com/thunderace/Esp8266-Arduino-Makefile
 
 Creates a Arduino ESP8266 development environment based on Makefiles.
