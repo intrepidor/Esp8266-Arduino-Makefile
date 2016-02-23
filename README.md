@@ -5,9 +5,13 @@ Creates a Arduino ESP8266 development environment based on Makefiles.
 Tested with Windows 7 and cygwinx64, and Ubuntu 14.04 x64.
 
 ## Changelog
+22/Feb/2016 : Allan Inda
+- Fixed makefile so it works for both Linux and Cygwin/Windows
+
 18/Feb/2016 : Allan Inda
 - Fixed Windows path issues.
 - Both Ubuntu and Cygwin/Windows work
+
 14/Feb/2016 : Allan Inda
 - forked from thunderace/Esp8266-Arduino-Makefile (Latest commit bf8cc59  on Dec 8, 2015)
 - added install script for cygwinx64 (tested on Windows 7 Pro)
@@ -22,6 +26,8 @@ Tested with Windows 7 and cygwinx64, and Ubuntu 14.04 x64.
 - cd Esp8266-Arduino-Makefile
 - chmod+x install-cygwin.sh
 - ./install-cygwin.sh
+- cd example/AdvancedWebServer
+- make
 
 ## Installation and test for Ubuntu 14.04.03 LTS
 - sudo apt-get update
