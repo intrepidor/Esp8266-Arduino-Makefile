@@ -13,13 +13,17 @@ declare XLIBINC=""
 declare PWD=`pwd`
 declare ROOT=`cygpath -m $PWD`
 
+# save anything that is downloaded for faster reinstalls
+declare DOWNLOAD_CACHE=../download
+mkdir -p $DOWNLOAD_CACHE
+
 ######
 download_and_install_library() {
 	local _URL="https://github.com/$1"	
 	local _ARCH=$2
 	local _NAME=$3
 	#----
-	echo "Download and install $DHT_NAME library ..."
+	echo "Download and install $_NAME library ..."
 	cp -np $DOWNLOAD_CACHE/$_ARCH .
 	wget --no-clobber --no-check-certificate $_URL -O $_ARCH
 	cp -np $_ARCH $DOWNLOAD_CACHE
@@ -31,10 +35,6 @@ download_and_install_library() {
 	XLIBINC=$XLIBINC" -I"$ROOT/$DESTINATION"/"$_NAME
 }
 
-# save anything that is downloaded for faster reinstalls
-declare DOWNLOAD_CACHE=../download
-mkdir -p $DOWNLOAD_CACHE
- 
 # Get MKSPIFFS Tool
 echo "Downloading MKSPIFFS Tool " $MKSPIFFS_VER " ..."
 cp -p $DOWNLOAD_CACHE/mkspiffs-$MKSPIFFS_VER-windows.zip .
