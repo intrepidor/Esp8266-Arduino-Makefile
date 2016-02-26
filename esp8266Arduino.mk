@@ -1,8 +1,14 @@
 # Makefile for esp8266/arduino
 # Tested with version 1.6.5-r5
 
+################################################################################################
+####
+####
 TARGET = $(notdir $(realpath .))
 
+################################################################################################
+####
+# Get root directory
 ARCH = $(shell uname)
 ifeq ($(ARCH), Linux)
    ROOT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -13,6 +19,12 @@ else
    ROOT_DIR := $(shell cygpath -m $(ROOT_DIR_RAW))
    EXEC_EXT = ".exe"
 endif
+
+################################################################################################
+####  
+#### Retrieve include paths for additional Arduino libraries 
+####
+include $(ROOT_DIR)/XLIBINC.mk
 
 ################################################################################################
 ####
@@ -139,7 +151,7 @@ LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) $(wildcard $(addsuffix 
 OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir $(LIB_SRC:.c=.c.o) $(LIB_CXXSRC:.cpp=.cpp.o) $(LIB_INOSRC:.ino=.ino.o) $(USER_SRC:.c=.c.o) $(USER_CXXSRC:.cpp=.cpp.o)))
 
 # includes
-INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%)
+INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%) $(XLIBINC)
 
 VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
 
