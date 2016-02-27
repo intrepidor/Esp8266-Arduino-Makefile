@@ -21,12 +21,6 @@ else
 endif
 
 ################################################################################################
-####  
-#### Retrieve include paths for additional Arduino libraries 
-####
-include $(ROOT_DIR)/XLIBINC.mk
-
-################################################################################################
 ####
 #### USER STUFF ####
 ####
@@ -47,6 +41,7 @@ LIB_INOSRC = $(wildcard $(addsuffix /*.ino,$(USRCDIRS)))
 ####
 
 ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
+EXTRA_LIBDIR ?= $(ROOT_DIR)/extra_libs
 ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
 ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
 
@@ -58,6 +53,8 @@ CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
 
 CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs
+
+LOCAL_SRCS = $(USER_SRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
 
 ################################################################################################
 ####
@@ -108,20 +105,14 @@ UPLOAD_SPEED = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 
 ################################################################################################
 ####
-#### INPUTS FILES AND FILE LISTS
+#### Autodetect defined User libraries
 ####
 
-BUILD_OUT = ./build.$(ARDUINO_VARIANT)
-
-#autodetect arduino libs and user libs
-LOCAL_SRCS = $(USER_SRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
 ifndef USER_LIBS
-    # automatically determine included user libraries
     USER_LIBS = $(sort $(filter $(notdir $(wildcard $(USER_LIBDIR)/*)), \
         $(shell $(SED) -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
 endif
 
-# user libraries and sketch code
 ULIBDIRS = $(sort $(dir $(wildcard \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/*.c) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.c) \
@@ -130,30 +121,86 @@ ULIBDIRS = $(sort $(dir $(wildcard \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.cpp))))
 
-ifndef ARDUINO_LIBS
-    # automatically determine included libraries
-    ARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ESP_HOME)/libraries/*)), \
+###############################################################################################
+####
+#### Auto detect included ESP8266-Arduino core libraries
+####
+
+ifndef EARDUINO_LIBS
+    EARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ESP_HOME)/libraries/*)), \
         $(shell $(SED) -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
 endif
 
-# arduino libraries
-ALIBDIRS = $(sort $(dir $(wildcard \
-	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.c) \
-	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
-	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.c) \
-	$(ARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
+EALIBDIRS = $(sort $(dir $(wildcard \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.c) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.c) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.c) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.h) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.h) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.h) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.cpp) \
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
 
+###############################################################################################
+####
+#### Auto detect included Arduino core libraries
+####
+
+#ifndef ARDUINO_LIBS
+#    ARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ARDUINO_HOME)/libraries/*)), \
+#        $(shell $(SED) -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
+#endif
+#
+#ALIBDIRS = $(sort $(dir $(wildcard \
+#	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/*.c) \
+#	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/*.cpp) \
+#	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/src/*.c) \
+#	$(ARDUINO_LIBS:%=$(ARDUINO_HOME)/libraries/%/src/*.cpp))))
+
+###############################################################################################
+####
+#### Auto detect included Additional/Extra libraries
+####	
+
+ifndef EXTRA_LIBS
+    # automatically determine included libraries
+    EXTRA_LIBS = $(sort $(filter $(notdir $(wildcard $(EXTRA_LIBDIR)/*)), \
+        $(shell $(SED) -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
+endif
+
+ELIBDIRS = $(sort $(dir $(wildcard \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/*.c) \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*.c) \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*/*.c) \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/*.cpp) \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*/*.cpp) \
+	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*.cpp))))
+
+###############################################################################################
+####
+#### 
+####	
+
+BUILD_OUT = ./build.$(ARDUINO_VARIANT)
+	
 # all sources
-LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) $(wildcard $(addsuffix /*.c,$(ALIBDIRS)))
-LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) $(wildcard $(addsuffix /*.cpp,$(ALIBDIRS)))
+LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) \
+	$(wildcard $(addsuffix /*.c,$(ALIBDIRS))) \
+	$(wildcard $(addsuffix /*.c,$(ELIBDIRS))) \
+	$(wildcard $(addsuffix /*.c,$(EALIBDIRS)))
+LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) \
+	$(wildcard $(addsuffix /*.cpp,$(ALIBDIRS))) \
+	$(wildcard $(addsuffix /*.cpp,$(ELIBDIRS))) \
+	$(wildcard $(addsuffix /*.cpp,$(EALIBDIRS)))
 
 # object files
 OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir $(LIB_SRC:.c=.c.o) $(LIB_CXXSRC:.cpp=.cpp.o) $(LIB_INOSRC:.ino=.ino.o) $(USER_SRC:.c=.c.o) $(USER_CXXSRC:.cpp=.cpp.o)))
 
 # includes
-INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%) $(XLIBINC)
+INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(EALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%) $(ELIBDIRS:%=-I%)
 
-VPATH = . $(CORE_INC) $(ALIBDIRS) $(ULIBDIRS)
+VPATH = . $(CORE_INC) $(ALIBDIRS) $(EALIBDIRS) $(ULIBDIRS) $(ELIBDIRS)
 
 ################################################################################################
 ####
@@ -188,7 +235,9 @@ all: show_variables dirs core libs bin size
 
 show_variables:
 	$(info [ARDUINO_LIBS] : $(ARDUINO_LIBS))
+	$(info [EARDUINO_LIBS] : $(EARDUINO_LIBS))
 	$(info [USER_LIBS] : $(USER_LIBS))
+	$(info [EXTRA_LIBS] : $(EXTRA_LIBS))
 
 dirs:
 	@mkdir -p $(BUILD_OUT)
@@ -271,22 +320,31 @@ printall:
 	@echo ""
 	@echo "### DIRECTORIES ###"
 	@echo "TARGET=$(TARGET)"
+	@echo "BUILD_OUT=$(BUILD_OUT)"
+	@echo ""
 	@echo "ROOT_DIR=$(ROOT_DIR)"
 	@echo "ARDUINO_HOME=$(ARDUINO_HOME)"
-	@echo "ARDUINO_LIBS=$(ARDUINO_LIBS)"
 	@echo "ESP_HOME=$(ESP_HOME)"
-	@echo "ESP_CORES=$(ESP_CORES)"
 	@echo "XTENSA_TOOLCHAIN=$(XTENSA_TOOLCHAIN)"
 	@echo "ESPRESSIF_SDK=$(ESPRESSIF_SDK)"
-	@echo "BUILD_OUT=$(BUILD_OUT)"
+	@echo "ESP_CORES=$(ESP_CORES)"
+	@echo ""
+	@echo "EARDUINO_HOME=$(EARDUINO_HOME)"
+	@echo "EXTRA_LIBDIR=$(EXTRA_LIBDIR)"
+	@echo "USER_LIBDIR=$(USER_LIBDIR)"
+	@echo ""
+	@echo "ARDUINO_LIBS=$(ARDUINO_LIBS)"
+	@echo "EXTRA_LIBS=$(EXTRA_LIBS)"
+	@echo "USER_LIBS=$(USER_LIBS)"
+	@echo ""
+	@echo "ELIBDIRS=$(ELIBDIRS)"
 	@echo "ULIBDIRS=$(ULIBDIRS)"
 	@echo "ALIBDIRS=$(ALIBDIRS)"
-	@echo "USER_LIBDIR=$(USER_LIBDIR)"
-	@echo "USER_LIBS=$(USER_LIBS)"
+	@echo "EALIBDIRS=$(EALIBDIRS)"
 	@echo ""
 	@echo "### FILES AND TOOLS ###"
 	@echo "BOARDS_TXT=$(BOARDS_TXT)"
-	@echo "PARSE_BOARD=$(PARSE_BOARD)"
+	@echo "PARSE_BOARD=$(PARSE_BOARD)"0
 	@echo "ESPTOOL=$(ESPTOOL)"
 	@echo "ESPOTA=$(ESPOTA)"
 	@echo "AR=$(AR)"

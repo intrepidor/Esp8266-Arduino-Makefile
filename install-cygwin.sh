@@ -8,7 +8,7 @@ declare ESP8266_VER=2.0.0
 declare MKSPIFFS_VER=0.1.2
 declare ESPTOOL_VER=0.4.6
 
-declare DESTINATION=arduino-$ARDUINO_VER/libraries
+declare DESTINATION=extra_libs
 declare XLIBINC=""
 declare PWD=`pwd`
 declare ROOT=`cygpath -m $PWD`
@@ -22,17 +22,17 @@ download_and_install_library() {
 	local _URL="https://github.com/$1"	
 	local _ARCH=$2
 	local _NAME=$3
-	#----
+	mkdir -p $DESTINATION
 	echo "Download and install $_NAME library ..."
-	cp -np $DOWNLOAD_CACHE/$_ARCH .
-	wget --no-clobber --no-check-certificate $_URL -O $_ARCH
-	cp -np $_ARCH $DOWNLOAD_CACHE
+	cp -px $DOWNLOAD_CACHE/$_ARCH .
+	wget -nv --no-clobber --no-check-certificate $_URL -O $_ARCH
+	cp -px $_ARCH $DOWNLOAD_CACHE
 	DIR=`zipinfo -1 $_ARCH | head -n 1 | awk -F\/ '{print $1}'`
 	unzip -qo $_ARCH
 	rm $_ARCH
-	cp -frp $DIR $DESTINATION/$_NAME
-#rm -r $DIR	
-	XLIBINC=$XLIBINC" -I"$ROOT/$DESTINATION"/"$_NAME
+	mv $DIR $_NAME
+	cp -frpx $_NAME $DESTINATION
+	rm -r --one-file-system $_NAME	
 }
 
 # Get MKSPIFFS Tool
@@ -97,6 +97,6 @@ download_and_install_library "adafruit/DHT-sensor-library/archive/1.2.3.zip" "DH
 download_and_install_library "tzapu/WiFiManager/archive/0.9.zip"             "WiFiManager-0.9-github.zip"          "WiFiManager"
 
 # DONE
-echo "XLIBINC="$XLIBINC > XLIBINC.mk
+#### FIXME echo "XLIBINC="$XLIBINC > XLIBINC.mk
 echo "All done."
 
