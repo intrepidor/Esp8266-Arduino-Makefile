@@ -97,6 +97,5 @@ download_and_install_library "adafruit/DHT-sensor-library/archive/1.2.3.zip" "DH
 download_and_install_library "tzapu/WiFiManager/archive/0.9.zip"             "WiFiManager-0.9-github.zip"          "WiFiManager"
 
 # DONE
-#### FIXME echo "XLIBINC="$XLIBINC > XLIBINC.mk
 echo "All done."
 
