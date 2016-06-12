@@ -11,8 +11,8 @@ declare ARDUINO_VER=1.6.9
 #declare ESP8266_VER=master
 declare ESP8266_VER=2.3.0-rc1
 declare MKSPIFFS_VER=0.1.2
-declare ESPTOOL_VER=0.4.6
-declare ESP_SDK_VER=1.4.0
+declare ESPTOOL_VER=0.4.8
+#declare ESP_SDK_VER=1.4.0
 
 declare DESTINATION=extra_libs
 declare XLIBINC=""
@@ -70,6 +70,7 @@ chmod +x bin/esptool
 mv esptool-$ESPTOOL_VER-linux64.tar.gz $DOWNLOAD_CACHE
 
 # Get Arduino IDE
+rm -f arduino # remove any existing softlinks so they don't get in the way
 cp -p $DOWNLOAD_CACHE/arduino-$ARDUINO_VER-linux64.tar.xz .
 wget --no-clobber http://arduino.cc/download.php?f=/arduino-$ARDUINO_VER-linux64.tar.xz -O arduino-$ARDUINO_VER-linux64.tar.xz
 cp -np arduino-$ARDUINO_VER-linux64.tar.xz $DOWNLOAD_CACHE
@@ -105,13 +106,17 @@ else
   mv  esp8266-$ESP8266_VER arduino-$ARDUINO_VER/hardware/esp8266com/esp8266
 fi
 fi
+
+# Create softlink to arduino library so the makefile does not need to know the version
+ln -sf arduino-$ARDUINO_VER arduino
+
 # Install ESP8266 RTOS SDK
-cp -r $DOWNLOAD_CACHE/esp8266_rtos_sdk-$ESP_SDK_VER.zip
-wget --no-clobber https://github.com/espressif/ESP8266_RTOS_SDK/archive/v$ESP_SDK_VER.zip
-mv v$ESP_SDK_VER.zip esp8266_rtos_sdk-$ESP_SDK_VER.zip
-cp -np esp8266_rtos_sdk-$ESP_SDK_VER.zip $DOWNLOAD_CACHE
-unzip -qo esp8266_rtos_sdk-$ESP_SDK_VER.zip
-rm esp8266_rtos_sdk-$ESP_SDK_VER.zip
+#icp -r $DOWNLOAD_CACHE/esp8266_rtos_sdk-$ESP_SDK_VER.zip
+#wget --no-clobber https://github.com/espressif/ESP8266_RTOS_SDK/archive/v$ESP_SDK_VER.zip
+#mv v$ESP_SDK_VER.zip esp8266_rtos_sdk-$ESP_SDK_VER.zip
+#cp -np esp8266_rtos_sdk-$ESP_SDK_VER.zip $DOWNLOAD_CACHE
+#unzip -qo esp8266_rtos_sdk-$ESP_SDK_VER.zip
+#rm esp8266_rtos_sdk-$ESP_SDK_VER.zip
 
 
 ######

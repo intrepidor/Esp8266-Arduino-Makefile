@@ -45,9 +45,7 @@ LIB_INOSRC = $(wildcard $(addsuffix /*.ino,$(USRCDIRS)))
 #### ARDUINO and ESP8266
 ####
 
-
-#ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
-ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.9
+ARDUINO_HOME ?= $(ROOT_DIR)/arduino
 EXTRA_LIBDIR ?= $(ROOT_DIR)/extra_libs
 ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
 ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
