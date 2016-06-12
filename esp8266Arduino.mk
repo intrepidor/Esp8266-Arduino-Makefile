@@ -6,6 +6,10 @@
 ####
 TARGET = $(notdir $(realpath .))
 
+BUILD_OUT = ./build.$(ARDUINO_VARIANT)
+
+DEBUG := -Og -ggdb
+
 ################################################################################################
 ####
 # Get root directory
@@ -30,6 +34,7 @@ USER_LIBDIR ?= ./libraries
 
 USRCDIRS = .
 USER_SRC = $(wildcard $(addsuffix /*.c,$(USRCDIRS)))
+USER_SSRC = $(wildcard $(addsuffix /*.S,$(USRCDIRS)))
 USER_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(USRCDIRS)))
 USER_HSRC = $(wildcard $(addsuffix /*.h,$(USRCDIRS)))
 USER_HPPSRC = $(wildcard $(addsuffix /*.hpp,$(USRCDIRS)))
@@ -40,10 +45,13 @@ LIB_INOSRC = $(wildcard $(addsuffix /*.ino,$(USRCDIRS)))
 #### ARDUINO and ESP8266
 ####
 
-ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
+
+#ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.5-r5
+ARDUINO_HOME ?= $(ROOT_DIR)/arduino-1.6.9
 EXTRA_LIBDIR ?= $(ROOT_DIR)/extra_libs
 ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
 ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
+ESP_LWIP = $(ESP_HOME)/tools/sdk/lwip/include
 
 CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
 CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
@@ -52,9 +60,9 @@ CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
 CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
 
-CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs
+CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs $(ESP_LWIP)
 
-LOCAL_SRCS = $(USER_SRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
+LOCAL_SRCS = $(USER_SRC) $(USER_SSRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
 
 ################################################################################################
 ####
@@ -66,7 +74,7 @@ XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
 ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
 ESPTOOL ?= $(ROOT_DIR)/bin/esptool$(EXEC_EXT)
 ESPOTA ?= $(ESP_HOME)/tools/espota.py
-#ESPTOOL_VERBOSE ?= -vv
+ESPTOOL_VERBOSE ?= -vv
 
 CC := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
 CXX := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-g++
@@ -98,10 +106,16 @@ MCU   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
 SERIAL_BAUD   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 F_CPU = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
 FLASH_SIZE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
-FLASH_MODE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
+FLASH_MODE ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
+#FLASH_MODE = dio
 FLASH_FREQ = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
 UPLOAD_RESETMETHOD = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.resetmethod)
-UPLOAD_SPEED = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+UPLOAD_SPEED ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
+# 115200 is the default; most hardware works with 230400, some with 460800, and some with 921600
+#UPLOAD_SPEED = 115200
+#UPLOAD_SPEED = 230400
+#UPLOAD_SPEED = 460800
+#UPLOAD_SPEED = 921600
 
 ################################################################################################
 ####
@@ -120,6 +134,7 @@ ULIBDIRS = $(sort $(dir $(wildcard \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*/*.cpp) \
 	$(USER_LIBS:%=$(USER_LIBDIR)/%/src/*.cpp))))
+	## FIXME : Add .S source files to this list ##	
 
 ###############################################################################################
 ####
@@ -141,6 +156,7 @@ EALIBDIRS = $(sort $(dir $(wildcard \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.cpp) \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
+	## FIXME : Add .S source files to this list ##
 
 ###############################################################################################
 ####
@@ -176,13 +192,12 @@ ELIBDIRS = $(sort $(dir $(wildcard \
 	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/*.cpp) \
 	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*/*.cpp) \
 	$(EXTRA_LIBS:%=$(EXTRA_LIBDIR)/%/src/*.cpp))))
+	## FIXME : Add .S source files to this list ##
 
 ###############################################################################################
 ####
 #### 
 ####	
-
-BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 	
 # all sources
 LIB_SRC = $(wildcard $(addsuffix /*.c,$(ULIBDIRS))) \
@@ -193,9 +208,16 @@ LIB_CXXSRC = $(wildcard $(addsuffix /*.cpp,$(ULIBDIRS))) \
 	$(wildcard $(addsuffix /*.cpp,$(ALIBDIRS))) \
 	$(wildcard $(addsuffix /*.cpp,$(ELIBDIRS))) \
 	$(wildcard $(addsuffix /*.cpp,$(EALIBDIRS)))
+	## FIXME : Add .S source files to this list ##	
 
 # object files
-OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir $(LIB_SRC:.c=.c.o) $(LIB_CXXSRC:.cpp=.cpp.o) $(LIB_INOSRC:.ino=.ino.o) $(USER_SRC:.c=.c.o) $(USER_CXXSRC:.cpp=.cpp.o)))
+OBJ_FILES = $(addprefix $(BUILD_OUT)/,$(notdir \
+	$(LIB_SRC:.c=.c.o) \
+	$(LIB_CXXSRC:.cpp=.cpp.o) \
+	$(LIB_INOSRC:.ino=.ino.o) \
+	$(USER_SRC:.c=.c.o) \
+	$(USER_SSRC:.S=.S.o) \
+	$(USER_CXXSRC:.cpp=.cpp.o)))
 
 # includes
 INCLUDES = $(CORE_INC:%=-I%) $(ALIBDIRS:%=-I%) $(EALIBDIRS:%=-I%) $(ULIBDIRS:%=-I%) $(ELIBDIRS:%=-I%)
@@ -215,11 +237,11 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
-CFLAGS = -c -Os -Wpointer-arith -Wno-implicit-function-declaration -Wl,-EL \
+CFLAGS = $(DEBUG) -c -Os -Wpointer-arith -Wno-implicit-function-declaration -Wl,-EL \
 	-fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals \
 	-falign-functions=4 -MMD -std=gnu99 -ffunction-sections -fdata-sections
 
-CXXFLAGS = -c -Os -mlongcalls -mtext-section-literals -fno-exceptions \
+CXXFLAGS = $(DEBUG) -c -Os -mlongcalls -mtext-section-literals -fno-exceptions \
 	-fno-rtti -falign-functions=4 -std=c++11 -MMD
 
 LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static -Wl,-wrap,system_restart_local -Wl,-wrap,register_chipv6_phy
@@ -231,7 +253,7 @@ LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start
 
 .PHONY: all arduino dirs clean upload
 
-all: show_variables dirs core libs bin size
+all: show_variables dirs core libs bin size 
 
 show_variables:
 	$(info [ARDUINO_LIBS] : $(ARDUINO_LIBS))
@@ -243,6 +265,8 @@ dirs:
 	@mkdir -p $(BUILD_OUT)
 	@mkdir -p $(BUILD_OUT)/core
 	@mkdir -p $(BUILD_OUT)/spiffs
+	@mkdir -p $(BUILD_OUT)/libb64
+	@mkdir -p $(BUILD_OUT)/umm_malloc
 
 clean:
 	rm -rf $(BUILD_OUT)
@@ -259,12 +283,18 @@ $(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.c
 $(BUILD_OUT)/spiffs/%.o: $(ESP_CORES)/spiffs/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
+$(BUILD_OUT)/core/%.c.o: $(ESP_CORES)/libb64/%.c
+	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
+
+$(BUILD_OUT)/core/%.c.o: $(ESP_CORES)/umm_malloc/%.c
+	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
+	
 $(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.cpp
 	$(CXX) $(DEFINES) $(CORE_INC:%=-I%) $(CXXFLAGS) -o $@ $<
 
 $(BUILD_OUT)/core/%.S.o: $(ESP_CORES)/%.S
 	$(CC) $(ASFLAGS) -o $@ $<
-
+	
 $(BUILD_OUT)/core/core.a: $(CORE_OBJS)
 	$(AR) cru $@ $(CORE_OBJS)
 
@@ -276,6 +306,9 @@ $(BUILD_OUT)/core/%.cpp.o: %.cpp
 
 $(BUILD_OUT)/%.c.o: %.c
 	$(CC) $(DEFINES) $(CFLAGS) $(INCLUDES) -o $@ $<
+
+$(BUILD_OUT)/%.S.o: %.S
+	$(CC) $(DEFINES) $(ASFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_OUT)/%.ino.o: %.ino
 	$(CXX) -x c++ $(DEFINES) $(CXXFLAGS) $(INCLUDES) $< -o $@
@@ -293,8 +326,13 @@ $(BUILD_OUT)/$(TARGET).elf: core libs
 		-Wl,--end-group -L$(BUILD_OUT)
 
 size : $(BUILD_OUT)/$(TARGET).elf
-		$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf | grep -E '^(?:\.text|\.data|\.rodata|\.irom0\.text|)\s+([0-9]+).*'
+	$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf | grep -E '^(?:\.text|\.data|\.rodata|\.irom0\.text|)\s+([0-9]+).*'
 
+lint: _LINT.TMP 
+	./lint *.c*
+
+lst:
+	$(OBJDUMP) -x $(BUILD_OUT)/$(TARGET).elf -dlwgS > $(BUILD_OUT)/$(TARGET).lst
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 	echo "Building BIN ..."
@@ -302,15 +340,24 @@ $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 		-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
 		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
 
-
 upload: $(BUILD_OUT)/$(TARGET).bin size
 	$(ESPTOOL) $(ESPTOOL_VERBOSE) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) -ca 0x00000 -cf $(BUILD_OUT)/$(TARGET).bin
+
+#read_mac: 
+#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) read_mac
+#
+#flash_id:
+#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) flash_id
+#
+#chip_id:
+#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) chip_id
 
 ota: $(BUILD_OUT)/$(TARGET).bin
 	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin
 
 term:
-	minicom -D $(SERIAL_PORT) -b $(UPLOAD_SPEED)
+#	minicom -D $(SERIAL_PORT) -b $(UPLOAD_SPEED)
+	cu -l $(SERIAL_PORT) -s $(SERIAL_BAUD)
 
 print-%: ; @echo $* = $($*)
 
@@ -400,4 +447,5 @@ printall:
 	@echo "USER_HPPSRC=$(USER_HPPSRC)"
 	@echo "USER_HSRC=$(USER_HSRC)"
 	@echo "USER_SRC=$(USER_SRC)"
+	@echo "USER_SSRC=$(USER_SSRC)"
 
