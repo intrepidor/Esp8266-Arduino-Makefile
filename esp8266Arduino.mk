@@ -8,7 +8,7 @@ TARGET = $(notdir $(realpath .))
 
 BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 
-DEBUG := -Og -ggdb
+#DEBUG := -Og -ggdb
 
 ################################################################################################
 ####
@@ -235,14 +235,42 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
-CFLAGS = $(DEBUG) -c -Os -Wpointer-arith -Wno-implicit-function-declaration -Wl,-EL \
-	-fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals \
-	-falign-functions=4 -MMD -std=gnu99 -ffunction-sections -fdata-sections
+CFLAGS = -c \
+	-O2 \
+	-Wpointer-arith \
+	-Wno-implicit-function-declaration \
+	-Wl,-EL \
+	-fno-inline-functions \
+	-nostdlib \
+	-mlongcalls \
+	-mtext-section-literals \
+	-falign-functions=4 \
+	-MMD \
+	-std=gnu99 \
+	-ffunction-sections \
+	-fdata-sections \
+	$(DEBUG) $(GDB)
+# make sure $(DEBUG) is after the default optimizations. The last setting is the one that takes effect.
 
-CXXFLAGS = $(DEBUG) -c -Os -mlongcalls -mtext-section-literals -fno-exceptions \
-	-fno-rtti -falign-functions=4 -std=c++11 -MMD
+CXXFLAGS = -c \
+	-O2 \
+	-mlongcalls \
+	-mtext-section-literals \
+	-fno-exceptions \
+	-fno-rtti \
+	-falign-functions=4 \
+	-std=c++11 \
+	-MMD \
+	$(DEBUG) $(GDB)
+# make sure $(DEBUG) is after the default optimizations. The last setting is the one that takes effect.
 
-LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static -Wl,-wrap,system_restart_local -Wl,-wrap,register_chipv6_phy
+LDFLAGS = -nostdlib \
+	-Wl,--gc-sections \
+	-Wl,--no-check-sections \
+	-u call_user_start \
+	-Wl,-static \
+	-Wl,-wrap,system_restart_local \
+	-Wl,-wrap,register_chipv6_phy
 
 ################################################################################################
 ####
@@ -252,6 +280,9 @@ LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start
 .PHONY: all arduino dirs clean upload
 
 all: show_variables dirs core libs bin size 
+
+debug: 
+	make DEBUG="-Og -ggdb" GDB=-DGDBSTUB all
 
 show_variables:
 	$(info [ARDUINO_LIBS] : $(ARDUINO_LIBS))
@@ -446,4 +477,5 @@ printall:
 	@echo "USER_HSRC=$(USER_HSRC)"
 	@echo "USER_SRC=$(USER_SRC)"
 	@echo "USER_SSRC=$(USER_SSRC)"
+	@echo "DEBUG=$(DEBUG)"
 

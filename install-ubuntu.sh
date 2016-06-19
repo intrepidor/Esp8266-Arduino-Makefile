@@ -6,13 +6,10 @@
 
 declare DEBUG="false"
 
-#declare ARDUINO_VER=1.6.5-r5
 declare ARDUINO_VER=1.6.9
-#declare ESP8266_VER=master
 declare ESP8266_VER=2.3.0-rc1
 declare MKSPIFFS_VER=0.1.2
 declare ESPTOOL_VER=0.4.8
-#declare ESP_SDK_VER=1.4.0
 
 declare DESTINATION=extra_libs
 declare XLIBINC=""
@@ -122,4 +119,4 @@ ln -sf arduino-$ARDUINO_VER arduino
 ######
 # Install additional libraries
 download_and_install_library "adafruit/DHT-sensor-library/archive/1.2.3.zip" "DHT_sensor_library-1.2.3-github.zip" "DHT"
-download_and_install_library "tzapu/WiFiManager/archive/0.9.zip"             "WiFiManager-0.9-github.zip"          "WiFiManager"
+download_and_install_library "tzapu/WiFiManager/archive/0.12.zip"            "WiFiManager-0.12-github.zip"         "WiFiManager"
