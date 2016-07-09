@@ -50,6 +50,7 @@ EXTRA_LIBDIR ?= $(ROOT_DIR)/extra_libs
 ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
 ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
 ESP_LWIP = $(ESP_HOME)/tools/sdk/lwip/include
+GDBSTUB_LIBDIR ?= $(ESP_HOME)/libraries/GDBStub/src/internal
 
 CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
 CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
@@ -58,7 +59,15 @@ CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
 CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
 
-CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs $(ESP_LWIP)
+#GDB_SSRC = $(wildcard $(GDBSTUB_LIBDIR)/*.S)
+#GDB_SRC = $(wildcard $(GDBSTUB_LIBDIR)/*.c)
+#GDB_SRC += $(wildcard $(GDBSTUB_LIBDIR)/*/*.c)
+#GDB_CXXSRC = $(wildcard $(GDBSTUB_LIBDIR)/*.cpp)
+#GDB_OBJS = $(addprefix $(BUILD_OUT)/core/, \
+#	$(notdir $(GDB_SSRC:.S=.S.o) $(GDB_SRC:.c=.c.o) $(GDB_CXXSRC:.cpp=.cpp.o)))
+#GDB_INC  = $(GDBSTUB_LIBDIR)
+
+CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs $(ESP_LWIP) $(GDBSTUB_LIBDIR)
 
 LOCAL_SRCS = $(USER_SRC) $(USER_SSRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
 
@@ -153,7 +162,16 @@ EALIBDIRS = $(sort $(dir $(wildcard \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.h) \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
 	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.cpp) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp))))
+	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/*.c) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*.c) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*/*.c) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/*.h) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*.h) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*/*.h) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/*.cpp) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*/*.cpp) \
+	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*.cpp))))
 	## FIXME : Add .S source files to this list ##
 
 ###############################################################################################
@@ -300,7 +318,8 @@ dirs:
 clean:
 	rm -rf $(BUILD_OUT)
 
-core: dirs $(BUILD_OUT)/core/core.a
+core: dirs $(BUILD_OUT)/core/core.a 
+#$(BUILD_OUT)/core/gdbstub.a
 
 libs: dirs $(OBJ_FILES)
 
@@ -327,6 +346,12 @@ $(BUILD_OUT)/core/%.S.o: $(ESP_CORES)/%.S
 $(BUILD_OUT)/core/core.a: $(CORE_OBJS)
 	$(AR) cru $@ $(CORE_OBJS)
 
+#$(BUILD_OUT)/core/gdbstub.a: $(GDB_OBJS)
+#	$(AR) cru $@ $(GDB_OBJS)
+#
+#$(BUILD_OUT)/core/%.S.o: $(GDB_OBJS)/%.S
+#	$(CC) $(ASFLAGS) -o $@ $<
+	
 $(BUILD_OUT)/core/%.c.o: %.c
 	$(CC) $(DEFINES) $(CFLAGS) $(INCLUDES) -o $@ $<
 
@@ -361,7 +386,7 @@ lint: _LINT.TMP
 	./lint *.c*
 
 lst:
-	$(OBJDUMP) -x $(BUILD_OUT)/$(TARGET).elf -dlwgS > $(BUILD_OUT)/$(TARGET).lst
+	$(OBJDUMP) -S $(BUILD_OUT)/$(TARGET).elf -dlwgS > $(BUILD_OUT)/$(TARGET).lst
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 	echo "Building BIN ..."
@@ -370,8 +395,21 @@ $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
 
 upload: $(BUILD_OUT)/$(TARGET).bin size
-	$(ESPTOOL) $(ESPTOOL_VERBOSE) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) -ca 0x00000 -cf $(BUILD_OUT)/$(TARGET).bin
+	$(ESPTOOL) $(ESPTOOL_VERBOSE) \
+		-cd $(UPLOAD_RESETMETHOD) \
+		-cb $(UPLOAD_SPEED) \
+		-cp $(SERIAL_PORT) \
+		-ca 0x00000 \
+		-cf $(BUILD_OUT)/$(TARGET).bin
 
+eraseflash:
+	$(ESPTOOL) $(ESPTOOL_VERBOSE) \
+		-cd $(UPLOAD_RESETMETHOD) \
+		-cb $(UPLOAD_SPEED) \
+		-cp $(SERIAL_PORT) \
+		-ca 0x00000 \
+		-cf blank_1MB.bin
+	
 #read_mac: 
 #	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) read_mac
 #
@@ -461,21 +499,30 @@ printall:
 	@echo "INCLUDES=$(INCLUDES)"
 	@echo "USRCDIRS=$(USRCDIRS)"
 	@echo "VPATH=$(VPATH)"
+#	@echo "GDB_INC=$(GDB_INC)"
 	@echo ""
 	@echo "### LISTS OF FILES ###"
 	@echo "CORE_SSRC=$(CORE_SSRC)"
 	@echo "CORE_SRC=$(CORE_SRC)"
 	@echo "CORE_CXXSRC=$(CORE_CXXSRC)"
 	@echo "CORE_OBJS=$(CORE_OBJS)"
+#	@echo ""
+#	@echo "GDB_SSRC=$(GDB_SSRC)"
+#	@echo "GDB_SRC=$(GDB_SRC)"
+#	@echo "GDB_CXXSRC=$(GDB_CXXSRC)"
+#	@echo "GDB_OBJS=$(GDB_OBJS)"
+	@echo ""
 	@echo "LOCAL_SRCS=$(LOCAL_SRCS)"
 	@echo "OBJ_FILES=$(OBJ_FILES)"
 	@echo "LIB_CXXSRC=$(LIB_CXXSRC)"
 	@echo "LIB_INOSRC=$(LIB_INOSRC)"
 	@echo "LIB_SRC=$(LIB_SRC)"
+	@echo ""
 	@echo "USER_CXXSRC=$(USER_CXXSRC)"
 	@echo "USER_HPPSRC=$(USER_HPPSRC)"
 	@echo "USER_HSRC=$(USER_HSRC)"
 	@echo "USER_SRC=$(USER_SRC)"
 	@echo "USER_SSRC=$(USER_SSRC)"
+	@echo ""
 	@echo "DEBUG=$(DEBUG)"
 
