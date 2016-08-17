@@ -140,7 +140,7 @@ dlAndInstallLib "adafruit/Adafruit_SHT31/archive/1.0.0.zip"              "adafru
 dlAndInstallLib "adafruit/Adafruit_HDC1000_Library/archive/1.0.1.zip"    "adafruit-HDC1000-1.0.0-github.zip"            "Adafruit_HDC1000" "."
 dlAndInstallLib "adafruit/Adafruit_BMP183_Library/archive/1.0.0.zip"     "adafruit-BMP183-1.0.0-github.zip"             "Adafruit_BMP183" "."
 dlAndInstallLib "adafruit/Adafruit_MQTT_Library/archive/0.13.0.zip"      "adafruit-MQTT-0.13.0-github.zip"              "Adafruit_MQTT" "."
-dlAndInstallLib "adafruit/Adafruit_ADS1X15/archive/1.0.0.zip"            "adafruit-ADS1X15-1.0.0-github.zip"            "Adafruit_ADS1X15" "."
+dlAndInstallLib "adafruit/Adafruit_ADS1X15/archive/1.0.0.zip"            "adafruit-ADS1X15-1.0.0-github.zip"            "Adafruit_ADS1015" "."
 dlAndInstallLib "adafruit/MAX6675-library/archive/1.0.0.zip"             "adafruit-MAX6675-1.0.0-github.zip"            "max6675" "."
 dlAndInstallLib "adafruit/ESP8266_Morse_Code/archive/master.zip"         "adafruit-Morse_Code-master-github.zip"        "MorseCode" "."
 

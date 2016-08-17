@@ -89,8 +89,9 @@ AR := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
 OBJDUMP := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-objdump
 SIZE := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-size
-CAT = cat$(EXEC_EXT)
-SED = sed$(EXEC_EXT)
+CAT = /bin/cat$(EXEC_EXT)
+SED = /bin/sed$(EXEC_EXT)
+GAWK = /usr/bin/gawk$(EXEC_EXT)
 
 ################################################################################################
 ####
@@ -253,6 +254,7 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
+CFLAGS_EXCLUDE_FOR_CLANG = -mlongcalls
 CFLAGS = -c \
 	-O2 \
 	-Wpointer-arith \
@@ -260,13 +262,13 @@ CFLAGS = -c \
 	-Wl,-EL \
 	-fno-inline-functions \
 	-nostdlib \
-	-mlongcalls \
 	-mtext-section-literals \
 	-falign-functions=4 \
 	-MMD \
 	-std=gnu99 \
 	-ffunction-sections \
 	-fdata-sections \
+	$(CFLAGS_EXCLUDE_FOR_CLANG) \
 	$(DEBUG) $(GDB)
 # make sure $(DEBUG) is after the default optimizations. The last setting is the one that takes effect.
 
@@ -379,8 +381,12 @@ $(BUILD_OUT)/$(TARGET).elf: core libs
 		-lwps -lcrypto \
 		-Wl,--end-group -L$(BUILD_OUT)
 
-size : $(BUILD_OUT)/$(TARGET).elf
-	$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf | grep -E '^(?:\.text|\.data|\.rodata|\.irom0\.text|)\s+([0-9]+).*'
+size: $(BUILD_OUT)/$(TARGET).elf
+	$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf | \
+		grep -E '^(Total|\.text|\.data|\.rodata|\.bss|\.comment|\.irom0\.text|)\s+([0-9]+).*'
+
+sizeall: $(BUILD_OUT)/$(TARGET).elf
+	$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf
 
 lint: _LINT.TMP 
 	./lint *.c*
