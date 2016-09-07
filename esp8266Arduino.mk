@@ -8,7 +8,25 @@ TARGET = $(notdir $(realpath .))
 
 BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 
-#DEBUG := -Og -ggdb
+#GDB := -ggdb
+
+# Choices are:
+#	-O0 = No optimization. Use for debugging
+#	-O1 = Optimizations that do not greatly affect compile time.
+#	-O2 = O1 + Optimizations that do not involve code space/speed tradeoffs
+#	-O3 = O2 + even more optimizations 
+#	-Ofast = O3 + optimizations not valid for standard-compliant programs
+#	-Os = All O2 optimizations that do not typically increase code size
+#	-Og = All optimizations that do not interfere with debugging
+OPTIMIZATION := -O2
+
+# Choices are:
+#   -g0 = negates -g. No debugging information
+#   -g1 = minimal debug information, enough for backtraces, funtions, external variables. No local variables.
+#   -g2 = standard debug information. Same as -g option.
+#   -g3 = includes extra information, such as macro definitions and potentially macro expansion.
+# NOTE: In case of duplicates, the last -g<n> option seen by the compilier is the one that gets used. 
+DEBUGSYMBOLS := -g3
 
 ################################################################################################
 ####
@@ -256,7 +274,6 @@ ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
 CFLAGS_EXCLUDE_FOR_CLANG = -mlongcalls
 CFLAGS = -c \
-	-O2 \
 	-Wpointer-arith \
 	-Wno-implicit-function-declaration \
 	-Wl,-EL \
@@ -269,11 +286,9 @@ CFLAGS = -c \
 	-ffunction-sections \
 	-fdata-sections \
 	$(CFLAGS_EXCLUDE_FOR_CLANG) \
-	$(DEBUG) $(GDB)
-# make sure $(DEBUG) is after the default optimizations. The last setting is the one that takes effect.
+	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(GDB)
 
 CXXFLAGS = -c \
-	-O2 \
 	-mlongcalls \
 	-mtext-section-literals \
 	-fno-exceptions \
@@ -281,8 +296,7 @@ CXXFLAGS = -c \
 	-falign-functions=4 \
 	-std=c++11 \
 	-MMD \
-	$(DEBUG) $(GDB)
-# make sure $(DEBUG) is after the default optimizations. The last setting is the one that takes effect.
+	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(GDB)
 
 LDFLAGS = -nostdlib \
 	-Wl,--gc-sections \
@@ -392,7 +406,18 @@ lint: _LINT.TMP
 	./lint *.c*
 
 lst:
-	$(OBJDUMP) -S $(BUILD_OUT)/$(TARGET).elf -dlwgS > $(BUILD_OUT)/$(TARGET).lst
+	$(OBJDUMP) \
+	--debugging \
+	--demangle \
+	--headers \
+	--file-headers \
+	--line-numbers \
+	--disassemble \
+	--source \
+	--syms \
+	--all-headers \
+	--wide \
+	$(BUILD_OUT)/$(TARGET).elf > $(BUILD_OUT)/$(TARGET).lst
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 	echo "Building BIN ..."
@@ -499,6 +524,8 @@ printall:
 	@echo "CXXFLAGS=$(CXXFLAGS)"
 	@echo "LDFLAGS=$(LDFLAGS)"
 	@echo "DEFINES=$(DEFINES)"
+	@echo "OPTIMIZATION=$(OPTIMIZATION)"
+	@echo "DEBUGSYMBOLS=$(DEBUGSYMBOLS)"		
 	@echo ""
 	@echo "### LISTS OF DIRECTORIES ###"
 	@echo "CORE_INC=$(CORE_INC)"
