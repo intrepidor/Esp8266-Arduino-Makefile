@@ -115,7 +115,6 @@ then
 else
   mv  esp8266-$ESP8266_VER arduino-$ARDUINO_VER/hardware/esp8266com/esp8266
 fi
-fi
 
 # Create softlink to arduino library so the makefile does not need to know the version
 ln -sf arduino-$ARDUINO_VER arduino
@@ -128,21 +127,24 @@ ln -sf arduino-$ARDUINO_VER arduino
 #unzip -qo esp8266_rtos_sdk-$ESP_SDK_VER.zip
 #rm esp8266_rtos_sdk-$ESP_SDK_VER.zip
 
+###########
+
+fi
 
 ######
 # Install additional libraries from "https://github.com/$1"
 #               URL path (i.e. $1 value)                                 Destination filename                           DestFolder  cache/nocache
 # Libraries with explicit support for ESP8266
 dlAndInstallLib "tzapu/WiFiManager/archive/0.12.zip"                     "WiFiManager-0.12-github.zip"                  "WiFiManager" "."
-## forked below ## dlAndInstallLib "adafruit/DHT-sensor-library/archive/1.2.3.zip"          "adafruit-DHT_sensor_library-1.2.3-github.zip" "DHT" "."
 dlAndInstallLib "adafruit/RTClib/archive/1.2.0.zip"                      "adafruit-RTClib-1.2.0-github.zip"             "RTClib" "."
 dlAndInstallLib "adafruit/Adafruit_SHT31/archive/1.0.0.zip"              "adafruit-SHT31-1.0.0-github.zip"              "Adafruit_SHT31" "."
 dlAndInstallLib "adafruit/Adafruit_HDC1000_Library/archive/1.0.1.zip"    "adafruit-HDC1000-1.0.0-github.zip"            "Adafruit_HDC1000" "."
 dlAndInstallLib "adafruit/Adafruit_BMP183_Library/archive/1.0.0.zip"     "adafruit-BMP183-1.0.0-github.zip"             "Adafruit_BMP183" "."
 dlAndInstallLib "adafruit/Adafruit_MQTT_Library/archive/0.13.0.zip"      "adafruit-MQTT-0.13.0-github.zip"              "Adafruit_MQTT" "."
-dlAndInstallLib "adafruit/Adafruit_ADS1X15/archive/1.0.0.zip"            "adafruit-ADS1X15-1.0.0-github.zip"            "Adafruit_ADS1015" "."
 dlAndInstallLib "adafruit/MAX6675-library/archive/1.0.0.zip"             "adafruit-MAX6675-1.0.0-github.zip"            "max6675" "."
 dlAndInstallLib "adafruit/ESP8266_Morse_Code/archive/master.zip"         "adafruit-Morse_Code-master-github.zip"        "MorseCode" "."
+## forked below ## dlAndInstallLib "adafruit/DHT-sensor-library/archive/1.2.3.zip"          "adafruit-DHT_sensor_library-1.2.3-github.zip" "DHT" "."
+## forked below ## dlAndInstallLib "adafruit/Adafruit_ADS1X15/archive/1.0.0.zip"            "adafruit-ADS1X15-1.0.0-github.zip"            "Adafruit_ADS1015" "."
 
 # Libraries for Arduino and may also support ESP8266
 dlAndInstallLib "adafruit/Adafruit_MMA8451_Library/archive/1.0.3.zip"    "adafruit-MMA8451-1.0.3-github.zip"            "Adafruit_MMA8451" "."
@@ -152,14 +154,15 @@ dlAndInstallLib "adafruit/Adafruit_SensorTester/archive/master.zip"      "adafru
 dlAndInstallLib "adafruit/Adafruit_MMA8451_Library/archive/1.0.3.zip"    "adafruit-MMA8451-1.0.3-github.zip"            "Adafruit_MMA8451" "."
 dlAndInstallLib "adafruit/Adafruit_HTU21DF_Library/archive/1.0.0.zip"    "adafruit_HTU21DF-1.0.0-github.zip"            "Adafruit_HTU21DF" "."
 dlAndInstallLib "Mr-rDy/Arduino-Temperature-Control-Library/archive/master.zip" "MyrDy-DallasTemperature-master-github.zip" "DallasTemperature" "."
-## forked below ## dlAndInstallLib "sparkfun/SparkFun_HTU21D_Breakout_Arduino_Library/archive/V_1.1.1.zip" "sparkFun_HTU21D-1.1.1-github.zip" "SparkFunHTU21D" "."
 dlAndInstallLib "sparkfun/BMP180_Breakout_Arduino_Library/archive/V_1.1.0.zip" "sparkfun_BMP180-1.1.1-github.zip"        "SFE_BMP180" "."
 dlAndInstallLib "sparkfun/SHT15_Breakout/archive/HW_1.3_FW_1.1.zip"      "sparkfun_SHT15-HW1.3_FW1.1-github.zip"         "SHT1X" "."
+## forked below ## dlAndInstallLib "sparkfun/SparkFun_HTU21D_Breakout_Arduino_Library/archive/V_1.1.1.zip" "sparkFun_HTU21D-1.1.1-github.zip" "SparkFunHTU21D" "."
 
 # My forked libraries
 dlAndInstallLib "intrepidor/OneWire/archive/master.zip"                  "intrepidor-OneWire-master-github.zip"         "OneWire" "nocache"
 dlAndInstallLib "intrepidor/HTU21D_Arduino_Library/archive/master.zip"   "intrepidor-HTU21D-github.zip"                 "SparkFunHTU21D" "nocache"
 dlAndInstallLib "intrepidor/DHT-sensor-library/archive/master.zip"       "intrepidor-DHT-github.zip"                    "DHT" "nocache"
+dlAndInstallLib "intrepidor/Adafruit_ADS1X15/archive/master.zip"         "intrepidor-Adafruit_ADS1X15-github.zip"       "ADS1X15" "nocache"
 
 # Software, but not libraries
 dlAndInstallLib "adafruit/Raw-IR-decoder-for-Arduino/archive/master.zip" "adafruit-RawIRDecoder-master-github.zip"      "Raw-IR-decoder-for-Arduino" "."
