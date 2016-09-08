@@ -98,6 +98,7 @@ XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
 
 ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
 ESPTOOL ?= $(ROOT_DIR)/bin/esptool$(EXEC_EXT)
+ESPTOOLPY ?= /usr/local/bin/esptool.py
 ESPOTA ?= $(ESP_HOME)/tools/espota.py
 ESPTOOL_VERBOSE ?= -vv
 
@@ -286,7 +287,7 @@ CFLAGS = -c \
 	-ffunction-sections \
 	-fdata-sections \
 	$(CFLAGS_EXCLUDE_FOR_CLANG) \
-	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(GDB)
+	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(DEBUG) $(GDB)
 
 CXXFLAGS = -c \
 	-mlongcalls \
@@ -296,7 +297,7 @@ CXXFLAGS = -c \
 	-falign-functions=4 \
 	-std=c++11 \
 	-MMD \
-	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(GDB)
+	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(DEBUG) $(GDB)
 
 LDFLAGS = -nostdlib \
 	-Wl,--gc-sections \
@@ -314,6 +315,28 @@ LDFLAGS = -nostdlib \
 .PHONY: all arduino dirs clean upload
 
 all: show_variables dirs core libs bin size 
+
+help:
+	@echo "make debug"
+	@echo "make show_variables"
+	@echo "make dirs"
+	@echo "make clean"
+	@echo "make core"
+	@echo "make libs"
+	@echo "make bin"
+	@echo "make size"
+	@echo "make sizeall"
+	@echo "make lint"
+	@echo "make list"
+	@echo "make upload"
+	@echo "make eraseFlash"
+	@echo "make dumpROM"
+	@echo "make read_flash_id"
+	@echo "make read_chip_id"				
+	@echo "make read_mac"
+	@echo "make term"
+	@echo "make print-%"
+	@echo "make printall"
 
 debug: 
 	make DEBUG="-Og -ggdb" GDB=-DGDBSTUB all
@@ -440,22 +463,42 @@ eraseflash:
 		-cp $(SERIAL_PORT) \
 		-ca 0x00000 \
 		-cf blank_1MB.bin
-	
-#read_mac: 
-#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) read_mac
-#
-#flash_id:
-#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) flash_id
-#
-#chip_id:
-#	$(ESPTOOL) -cd $(UPLOAD_RESETMETHOD) -cb $(UPLOAD_SPEED) -cp $(SERIAL_PORT) chip_id
 
-ota: $(BUILD_OUT)/$(TARGET).bin
-	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin
+# Internal 64KB ROM resides at 0x40000000
+dumpROM:
+	echo "Dumping ESP8266 64KB ROM to iram0.bin"
+	$(ESPTOOLPY) \
+	-fs $(FLASH_SIZE) \
+	-ff $(FLASH_FREQ) \
+	-fm $(FLASH_MODE) \
+	--port $(SERIAL_PORT) \
+	--baud $(SERIAL_BAUD) \
+	dump_mem 0x40000000 65536 iram0.bin
+
+read_mac: 
+	$(ESPTOOLPY) \
+	--port $(SERIAL_PORT) \
+	--baud $(SERIAL_BAUD) \
+	read_mac
+
+read_flash_id:
+	$(ESPTOOLPY) \
+	--port $(SERIAL_PORT) \
+	--baud $(SERIAL_BAUD) \
+	flash_id
+
+read_chip_id:
+	$(ESPTOOLPY) \
+	--port $(SERIAL_PORT) \
+	--baud $(SERIAL_BAUD) \
+	chip_id
+
+#ota: $(BUILD_OUT)/$(TARGET).bin
+#	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin
 
 term:
-#	minicom -D $(SERIAL_PORT) -b $(UPLOAD_SPEED)
-	cu -l $(SERIAL_PORT) -s $(SERIAL_BAUD)
+	minicom -D $(SERIAL_PORT) -b $(UPLOAD_SPEED)
+#	cu -l $(SERIAL_PORT) -s $(SERIAL_BAUD)
 
 print-%: ; @echo $* = $($*)
 
