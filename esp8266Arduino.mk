@@ -1,6 +1,18 @@
 # Makefile for esp8266/arduino
 # Tested with version 1.6.5-r5
 
+ARDUINO_VERSION ?= 10609
+SERIAL_PORT ?= /dev/tty.nodemcu
+
+# ARDUINO_ARCH is one of: esp8266, 
+ARDUINO_ARCH ?= esp8266
+
+# ARDUINO_BOARD is one of: ESP8266_ESP12, 
+ARDUINO_BOARD ?= ESP8266_ESP12
+
+# ARDUINO_VARIANT is one of: nodemcu, 
+ARDUINO_VARIANT ?= nodemcu
+
 ################################################################################################
 ####
 ####
@@ -65,15 +77,19 @@ LIB_INOSRC = $(wildcard $(addsuffix /*.ino,$(USRCDIRS)))
 
 ARDUINO_HOME ?= $(ROOT_DIR)/arduino
 EXTRA_LIBDIR ?= $(ROOT_DIR)/extra_libs
-ESP_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
-ESP_CORES = $(ESP_HOME)/cores/$(ARDUINO_ARCH)
-ESP_LWIP = $(ESP_HOME)/tools/sdk/lwip/include
-GDBSTUB_LIBDIR ?= $(ESP_HOME)/libraries/GDBStub/src/internal
+ifeq ($(ARDUINO_ARCH), esp8266)
+ARCH_HOME = $(ARDUINO_HOME)/hardware/esp8266com/esp8266
+else
+ARCH_HOME = $(ARDUINO_HOME)/hardware/arduino/avr
+endif
+ARCH_CORES = $(ARCH_HOME)/cores/$(ARDUINO_ARCH)
+LWIP_HOME = $(ARCH_HOME)/tools/sdk/lwip/include
+GDBSTUB_LIBDIR ?= $(ARCH_HOME)/libraries/GDBStub/src/internal
 
-CORE_SSRC = $(wildcard $(ESP_CORES)/*.S)
-CORE_SRC = $(wildcard $(ESP_CORES)/*.c)
-CORE_SRC += $(wildcard $(ESP_CORES)/*/*.c)
-CORE_CXXSRC = $(wildcard $(ESP_CORES)/*.cpp)
+CORE_SSRC = $(wildcard $(ARCH_CORES)/*.S)
+CORE_SRC = $(wildcard $(ARCH_CORES)/*.c)
+CORE_SRC += $(wildcard $(ARCH_CORES)/*/*.c)
+CORE_CXXSRC = $(wildcard $(ARCH_CORES)/*.cpp)
 CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 	$(notdir $(CORE_SSRC:.S=.S.o) $(CORE_SRC:.c=.c.o) $(CORE_CXXSRC:.cpp=.cpp.o)))
 
@@ -85,7 +101,7 @@ CORE_OBJS = $(addprefix $(BUILD_OUT)/core/, \
 #	$(notdir $(GDB_SSRC:.S=.S.o) $(GDB_SRC:.c=.c.o) $(GDB_CXXSRC:.cpp=.cpp.o)))
 #GDB_INC  = $(GDBSTUB_LIBDIR)
 
-CORE_INC = $(ESP_CORES) $(ESP_HOME)/variants/$(VARIANT) $(ESP_CORES)/spiffs $(ESP_LWIP) $(GDBSTUB_LIBDIR)
+CORE_INC = $(ARCH_CORES) $(ARCH_HOME)/variants/$(VARIANT) $(ARCH_CORES)/spiffs $(LWIP_HOME) $(GDBSTUB_LIBDIR)
 
 LOCAL_SRCS = $(USER_SRC) $(USER_SSRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) $(USER_HPPSRC)
 
@@ -94,36 +110,47 @@ LOCAL_SRCS = $(USER_SRC) $(USER_SSRC) $(USER_CXXSRC) $(LIB_INOSRC) $(USER_HSRC) 
 #### TOOLS
 ####
 
-XTENSA_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
-
-ESPRESSIF_SDK = $(ESP_HOME)/tools/sdk
 ESPTOOL ?= $(ROOT_DIR)/bin/esptool$(EXEC_EXT)
 ESPTOOLPY ?= /usr/local/bin/esptool.py
-ESPOTA ?= $(ESP_HOME)/tools/espota.py
+ESPOTA ?= $(ARCH_HOME)/tools/espota.py
 ESPTOOL_VERBOSE ?= -vv
 
-CC := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
-CXX := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-g++
-AR := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-ar
-LD := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-gcc
-OBJDUMP := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-objdump
-SIZE := $(XTENSA_TOOLCHAIN)xtensa-lx106-elf-size
+ifeq ($(ARDUINO_ARCH), esp8266)
+ARCH_DEFINE = ESP8266
+ARCH_SDK = $(ARCH_HOME)/tools/sdk
+ARCH_TOOLCHAIN ?= $(ROOT_DIR)/xtensa-lx106-elf/bin/
+CC := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-gcc
+CXX := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-g++
+AR := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-ar
+LD := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-gcc
+OBJDUMP := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-objdump
+SIZE := $(ARCH_TOOLCHAIN)xtensa-lx106-elf-size
+else
+ARCH_DEFINE = NOT_ESP8266
+ARCH_SDK = $(ARCH_HOME)/tools/sdk
+ARCH_TOOLCHAIN ?= $(ROOT_DIR)/arduino/hardware/tools/avr/bin/
+CC := $(ARCH_TOOLCHAIN)avr-gcc
+CXX := $(ARCH_TOOLCHAIN)avr-g++
+AR := $(ARCH_TOOLCHAIN)avr-ar
+LD := $(ARCH_TOOLCHAIN)avr-gcc
+OBJDUMP := $(ARCH_TOOLCHAIN)avr-objdump
+SIZE := $(ARCH_TOOLCHAIN)avr-size
+endif
+
+################################################################################################
+####
+#### Common Tools
+####
 CAT = /bin/cat$(EXEC_EXT)
 SED = /bin/sed$(EXEC_EXT)
 GAWK = /usr/bin/gawk$(EXEC_EXT)
 
 ################################################################################################
 ####
-#### BOARD CONFIGURATION
+#### DETERMINE BOARD CONFIGURATION
 ####
 
-ARDUINO_ARCH = esp8266
-ARDUINO_BOARD ?= ESP8266_ESP12
-ARDUINO_VARIANT ?= nodemcu
-ARDUINO_VERSION ?= 10605
-SERIAL_PORT ?= /dev/tty.nodemcu
-
-BOARDS_TXT  = $(ESP_HOME)/boards.txt
+BOARDS_TXT  = $(ARCH_HOME)/boards.txt
 PARSE_BOARD = $(ROOT_DIR)/bin/ard-parse-boards
 PARSE_BOARD_OPTS = --boards_txt=$(BOARDS_TXT)
 PARSE_BOARD_CMD = perl $(PARSE_BOARD) $(PARSE_BOARD_OPTS)
@@ -165,24 +192,24 @@ ULIBDIRS = $(sort $(dir $(wildcard \
 
 ###############################################################################################
 ####
-#### Auto detect included ESP8266-Arduino core libraries
+#### Auto detect included ESP8266/AVR Arduino core libraries
 ####
 
 ifndef EARDUINO_LIBS
-    EARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ESP_HOME)/libraries/*)), \
+    EARDUINO_LIBS = $(sort $(filter $(notdir $(wildcard $(ARCH_HOME)/libraries/*)), \
         $(shell $(SED) -ne 's/^ *\# *include *[<\"]\(.*\)\.h[>\"]/\1/p' $(LOCAL_SRCS))))
 endif
 
 EALIBDIRS = $(sort $(dir $(wildcard \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.c) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.c) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.c) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.h) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.h) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.h) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/*.cpp) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*/*.cpp) \
-	$(EARDUINO_LIBS:%=$(ESP_HOME)/libraries/%/src/*.cpp) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/*.c) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*.c) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*/*.c) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/*.h) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*.h) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*/*.h) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/*.cpp) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*/*.cpp) \
+	$(EARDUINO_LIBS:%=$(ARCH_HOME)/libraries/%/src/*.cpp) \
 	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/*.c) \
 	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*.c) \
 	$(EARDUINO_LIBS:%=$(GDBSTUB_LIBDIR)/%/src/*/*.c) \
@@ -267,9 +294,9 @@ VPATH = . $(CORE_INC) $(ALIBDIRS) $(EALIBDIRS) $(ULIBDIRS) $(ELIBDIRS)
 
 DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 	-DF_CPU=$(F_CPU) -DARDUINO=$(ARDUINO_VERSION) \
-	-DARDUINO_$(ARDUINO_BOARD) -DESP8266 \
+	-DARDUINO_$(ARDUINO_BOARD) -D$(ARCH_DEFINE) \
 	-DARDUINO_ARCH_$(shell echo "$(ARDUINO_ARCH)" | tr '[:lower:]' '[:upper:]') \
-	-I$(ESPRESSIF_SDK)/include
+	-I$(ARCH_SDK)/include
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
@@ -364,22 +391,22 @@ libs: dirs $(OBJ_FILES)
 
 bin: $(BUILD_OUT)/$(TARGET).bin
 
-$(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.c
+$(BUILD_OUT)/core/%.o: $(ARCH_CORES)/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
-$(BUILD_OUT)/spiffs/%.o: $(ESP_CORES)/spiffs/%.c
+$(BUILD_OUT)/spiffs/%.o: $(ARCH_CORES)/spiffs/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
-$(BUILD_OUT)/core/%.c.o: $(ESP_CORES)/libb64/%.c
+$(BUILD_OUT)/core/%.c.o: $(ARCH_CORES)/libb64/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 
-$(BUILD_OUT)/core/%.c.o: $(ESP_CORES)/umm_malloc/%.c
+$(BUILD_OUT)/core/%.c.o: $(ARCH_CORES)/umm_malloc/%.c
 	$(CC) $(DEFINES) $(CORE_INC:%=-I%) $(CFLAGS) -o $@ $<
 	
-$(BUILD_OUT)/core/%.o: $(ESP_CORES)/%.cpp
+$(BUILD_OUT)/core/%.o: $(ARCH_CORES)/%.cpp
 	$(CXX) $(DEFINES) $(CORE_INC:%=-I%) $(CXXFLAGS) -o $@ $<
 
-$(BUILD_OUT)/core/%.S.o: $(ESP_CORES)/%.S
+$(BUILD_OUT)/core/%.S.o: $(ARCH_CORES)/%.S
 	$(CC) $(ASFLAGS) -o $@ $<
 	
 $(BUILD_OUT)/core/core.a: $(CORE_OBJS)
@@ -411,8 +438,8 @@ $(BUILD_OUT)/%.cpp.o: %.cpp
 
 # ultimately, use our own ld scripts ...
 $(BUILD_OUT)/$(TARGET).elf: core libs
-	$(LD) $(LDFLAGS) -L$(ESPRESSIF_SDK)/lib \
-		-L$(ESPRESSIF_SDK)/ld -T$(ESPRESSIF_SDK)/ld/eagle.flash.4m.ld \
+	$(LD) $(LDFLAGS) -L$(ARCH_SDK)/lib \
+		-L$(ARCH_SDK)/ld -T$(ARCH_SDK)/ld/eagle.flash.4m.ld \
 		-o $@ -Wl,--start-group $(OBJ_FILES) $(BUILD_OUT)/core/core.a \
 		-lm -lgcc -lhal -lphy -lnet80211 -llwip -lwpa -lmain -lpp -lsmartconfig \
 		-lwps -lcrypto \
@@ -443,55 +470,94 @@ lst:
 	$(BUILD_OUT)/$(TARGET).elf > $(BUILD_OUT)/$(TARGET).lst
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
-	echo "Building BIN ..."
-	$(ESPTOOL) -eo $(ESP_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
-		-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
-		-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec
+	@echo "Building BIN ..."
+	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		$(ESPTOOL) -eo $(ARCH_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
+			-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
+			-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec; \
+	else \
+		echo "add code to build BIN for AVR"; \
+	fi
 
 upload: $(BUILD_OUT)/$(TARGET).bin size
+	if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
 	$(ESPTOOL) $(ESPTOOL_VERBOSE) \
 		-cd $(UPLOAD_RESETMETHOD) \
 		-cb $(UPLOAD_SPEED) \
 		-cp $(SERIAL_PORT) \
 		-ca 0x00000 \
-		-cf $(BUILD_OUT)/$(TARGET).bin
+		-cf $(BUILD_OUT)/$(TARGET).bin; \
+	else \
+		echo "add code to do size for AVR"; \
+	fi
+	
+which_arch:
+	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Architecture is ESP8266"; \
+	else \
+		echo "Architecture is not ESP8266"; \
+	fi
 
 eraseflash:
-	$(ESPTOOL) $(ESPTOOL_VERBOSE) \
-		-cd $(UPLOAD_RESETMETHOD) \
-		-cb $(UPLOAD_SPEED) \
-		-cp $(SERIAL_PORT) \
-		-ca 0x00000 \
-		-cf blank_1MB.bin
-
+	if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Erasing Flash ..."; \
+		$(ESPTOOL) $(ESPTOOL_VERBOSE) \
+			-cd $(UPLOAD_RESETMETHOD) \
+			-cb $(UPLOAD_SPEED) \
+			-cp $(SERIAL_PORT) \
+			-ca 0x00000 \
+			-cf blank_1MB.bin; \
+	else \
+		echo "eraseflash not supported for AVR targets"; \
+	fi	
+	
 # Internal 64KB ROM resides at 0x40000000
 dumpROM:
-	echo "Dumping ESP8266 64KB ROM to iram0.bin"
-	$(ESPTOOLPY) \
-	-fs $(FLASH_SIZE) \
-	-ff $(FLASH_FREQ) \
-	-fm $(FLASH_MODE) \
-	--port $(SERIAL_PORT) \
-	--baud $(SERIAL_BAUD) \
-	dump_mem 0x40000000 65536 iram0.bin
+	if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Dumping ESP8266 64KB ROM to iram0.bin"; \
+		$(ESPTOOLPY) \
+			-fs $(FLASH_SIZE) \
+			-ff $(FLASH_FREQ) \
+			-fm $(FLASH_MODE) \
+			--port $(SERIAL_PORT) \
+			--baud $(SERIAL_BAUD) \
+			dump_mem 0x40000000 65536 iram0.bin; \
+	else \
+		echo "dumpROM not supported for AVR targets"; \
+	fi
 
 read_mac: 
-	$(ESPTOOLPY) \
-	--port $(SERIAL_PORT) \
-	--baud $(SERIAL_BAUD) \
-	read_mac
+	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Reading MAC ..."; \
+		$(ESPTOOLPY) \
+			--port $(SERIAL_PORT) \
+			--baud $(SERIAL_BAUD) \
+			read_mac; \
+	else \
+		echo "read_mac not supported for AVR targets"; \
+	fi
 
 read_flash_id:
-	$(ESPTOOLPY) \
-	--port $(SERIAL_PORT) \
-	--baud $(SERIAL_BAUD) \
-	flash_id
-
+	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Reading Flash ID ..."; \
+		$(ESPTOOLPY) \
+			--port $(SERIAL_PORT) \
+			--baud $(SERIAL_BAUD) \
+			flash_id; \
+	else \
+		echo "read_flash_id not supported for AVR targets"; \
+	fi
+	
 read_chip_id:
-	$(ESPTOOLPY) \
-	--port $(SERIAL_PORT) \
-	--baud $(SERIAL_BAUD) \
-	chip_id
+	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		echo "Reading Chip ID ..."; \
+		$(ESPTOOLPY) \
+			--port $(SERIAL_PORT) \
+			--baud $(SERIAL_BAUD) \
+			chip_id; \
+	else \
+		echo "read_chip_id not supported for AVR targets"; \
+	fi
 
 #ota: $(BUILD_OUT)/$(TARGET).bin
 #	$(ESPOTA) 192.168.1.184 8266 $(BUILD_OUT)/$(TARGET).bin
@@ -512,10 +578,10 @@ printall:
 	@echo ""
 	@echo "ROOT_DIR=$(ROOT_DIR)"
 	@echo "ARDUINO_HOME=$(ARDUINO_HOME)"
-	@echo "ESP_HOME=$(ESP_HOME)"
-	@echo "XTENSA_TOOLCHAIN=$(XTENSA_TOOLCHAIN)"
-	@echo "ESPRESSIF_SDK=$(ESPRESSIF_SDK)"
-	@echo "ESP_CORES=$(ESP_CORES)"
+	@echo "ARCH_HOME=$(ARCH_HOME)"
+	@echo "ARCH_TOOLCHAIN=$(ARCH_TOOLCHAIN)"
+	@echo "ARCH_SDK=$(ARCH_SDK)"
+	@echo "ARCH_CORES=$(ARCH_CORES)"
 	@echo ""
 	@echo "EARDUINO_HOME=$(EARDUINO_HOME)"
 	@echo "EXTRA_LIBDIR=$(EXTRA_LIBDIR)"
@@ -569,6 +635,7 @@ printall:
 	@echo "DEFINES=$(DEFINES)"
 	@echo "OPTIMIZATION=$(OPTIMIZATION)"
 	@echo "DEBUGSYMBOLS=$(DEBUGSYMBOLS)"		
+	@echo "ARCH_DEFINE=$(ARCH_DEFINE)"
 	@echo ""
 	@echo "### LISTS OF DIRECTORIES ###"
 	@echo "CORE_INC=$(CORE_INC)"
