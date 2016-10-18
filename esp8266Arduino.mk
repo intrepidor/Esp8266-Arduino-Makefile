@@ -1,16 +1,63 @@
-# Makefile for esp8266/arduino
-# Tested with version 1.6.5-r5
+# Makefile for esp8266-arduino and AVR-arduino
+# Tested with version 1.6.9
 
 ARDUINO_VERSION ?= 10609
 SERIAL_PORT ?= /dev/tty.nodemcu
 
-# ARDUINO_ARCH is one of: esp8266, 
+# ARDUINO_ARCH is one of: esp8266, arduino
 ARDUINO_ARCH ?= esp8266
 
-# ARDUINO_BOARD is one of: ESP8266_ESP12, 
+# MMCU is one of: esp8266, atmega328p, atmega2560
+MMCU ?= atmega2560
+
+# ARDUINO_BOARD is one of: ESP8266_ESP12, AVR_ESPLORA, AVR_UNO, AVR_MINI, AVR_NANO, AVR_MEGA, AVR_MEGA2560, AVR_LEONARDO
 ARDUINO_BOARD ?= ESP8266_ESP12
 
-# ARDUINO_VARIANT is one of: nodemcu, 
+# ARDUINO_VARIANT is one of: 
+# --- ARDUINO_ARCH = avr ---
+# Tag            Board Name
+# LilyPadUSB     LilyPad Arduino USB
+# atmegang       Arduino NG or older
+# bt             Arduino BT
+# diecimila      Arduino Duemilanove or Diecimila
+# esplora        Arduino Esplora
+# ethernet       Arduino Ethernet
+# fio            Arduino Fio
+# gemma          Arduino Gemma
+# leonardo       Arduino Leonardo
+# lilypad        LilyPad Arduino
+# mega           Arduino/Genuino Mega or Mega 2560
+# megaADK        Arduino Mega ADK
+# menu           Anonymous
+# micro          Arduino/Genuino Micro
+# mini           Arduino Mini
+# nano           Arduino Nano
+# pro            Arduino Pro or Pro Mini
+# robotControl   Arduino Robot Control
+# robotMotor     Arduino Robot Motor
+# uno            Arduino/Genuino Uno
+# yun            Arduino Yún
+#
+# --- ARDUINO_ARCH = esp8266 ---
+# Tag                Board Name
+# coredev            Core Development Module
+# d1                 WeMos D1(Retired)
+# d1_mini            WeMos D1 R2 & mini
+# esp210             SweetPea ESP-210
+# espduino           ESPDuino (ESP-13 Module)
+# espino             ESPino (ESP-12 Module)
+# espinotee          ThaiEasyElec's ESPino
+# espresso_lite_v1   ESPresso Lite 1.0
+# espresso_lite_v2   ESPresso Lite 2.0
+# generic            Generic ESP8266 Module
+# huzzah             Adafruit HUZZAH ESP8266
+# menu               Anonymous
+# modwifi            Olimex MOD-WIFI-ESP8266(-DEV)
+# nodemcu            NodeMCU 0.9 (ESP-12 Module)
+# nodemcuv2          NodeMCU 1.0 (ESP-12E Module)
+# thing              SparkFun ESP8266 Thing
+# thingdev           SparkFun ESP8266 Thing Dev
+# wifinfo            WifInfo
 ARDUINO_VARIANT ?= nodemcu
 
 ################################################################################################
@@ -30,7 +77,7 @@ BUILD_OUT = ./build.$(ARDUINO_VARIANT)
 #	-Ofast = O3 + optimizations not valid for standard-compliant programs
 #	-Os = All O2 optimizations that do not typically increase code size
 #	-Og = All optimizations that do not interfere with debugging
-OPTIMIZATION := -O2
+OPTIMIZATION ?= -O2
 
 # Choices are:
 #   -g0 = negates -g. No debugging information
@@ -38,7 +85,7 @@ OPTIMIZATION := -O2
 #   -g2 = standard debug information. Same as -g option.
 #   -g3 = includes extra information, such as macro definitions and potentially macro expansion.
 # NOTE: In case of duplicates, the last -g<n> option seen by the compilier is the one that gets used. 
-DEBUGSYMBOLS := -g3
+DEBUGSYMBOLS ?= -g3
 
 ################################################################################################
 ####
@@ -159,17 +206,21 @@ VARIANT = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.variant)
 MCU   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.mcu)
 SERIAL_BAUD   = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 F_CPU = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.f_cpu)
-FLASH_SIZE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
-FLASH_MODE ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
-#FLASH_MODE = dio
-FLASH_FREQ = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
-UPLOAD_RESETMETHOD = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.resetmethod)
+
 UPLOAD_SPEED ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.speed)
 # 115200 is the default; most hardware works with 230400, some with 460800, and some with 921600
 #UPLOAD_SPEED = 115200
 #UPLOAD_SPEED = 230400
 #UPLOAD_SPEED = 460800
 #UPLOAD_SPEED = 921600
+
+ifeq ($(ARDUINO_ARCH), esp8266) 
+FLASH_SIZE = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_size)
+FLASH_MODE ?= $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_mode)
+#FLASH_MODE = dio
+FLASH_FREQ = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) build.flash_freq)
+UPLOAD_RESETMETHOD = $(shell $(PARSE_BOARD_CMD) $(ARDUINO_VARIANT) upload.resetmethod)
+endif
 
 ################################################################################################
 ####
@@ -300,31 +351,62 @@ DEFINES = $(USER_DEFINE) -D__ets__ -DICACHE_FLASH -U__STRICT_ANSI__ \
 
 ASFLAGS = -c -g -x assembler-with-cpp -MMD $(DEFINES)
 
-CFLAGS_EXCLUDE_FOR_CLANG = -mlongcalls
+ifeq ($(ARDUINO_ARCH), esp8266) 
+CFLAGS_MLONGCALLS = -mlongcalls
+CFLAGS_MTEXT_SECTION_LITERALS = -mtext-section-literals
+CFLAGS_MMCU = 
+else
+CFLAGS_MLONGCALLS = 
+CFLAGS_MTEXT_SECTION_LITERALS = 
+CFLAGS_MMCU = -mmcu=$(MMCU)
+endif
 CFLAGS = -c \
 	-Wpointer-arith \
 	-Wno-implicit-function-declaration \
 	-Wl,-EL \
 	-fno-inline-functions \
 	-nostdlib \
-	-mtext-section-literals \
 	-falign-functions=4 \
 	-MMD \
-	-std=gnu99 \
+	-std=gnu11 \
 	-ffunction-sections \
 	-fdata-sections \
-	$(CFLAGS_EXCLUDE_FOR_CLANG) \
+	$(CFLAGS_MMCU) \
+	$(CFLAGS_MLONGCALLS) \
+	$(CFLAGS_MTEXT_SECTION_LITERALS) \
 	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(DEBUG) $(GDB)
 
 CXXFLAGS = -c \
-	-mlongcalls \
-	-mtext-section-literals \
 	-fno-exceptions \
 	-fno-rtti \
 	-falign-functions=4 \
-	-std=c++11 \
 	-MMD \
+	-std=c++11 \
+	$(CFLAGS_MMCU) \
+	$(CFLAGS_MLONGCALLS) \
+	$(CFLAGS_MTEXT_SECTION_LITERALS) \
 	$(OPTIMIZATION) $(DEBUGSYMBOLS) $(DEBUG) $(GDB)
+
+#ARDUINO IDE BUILD OUTPUT EXAMPLE
+# "/home/allan/ESP8266/arduino-1.6.12/hardware/tools/avr/bin/avr-gcc"
+#  -c 
+#  -g 
+#  -Os  
+#  -std=gnu11 
+#  -ffunction-sections 
+#  -fdata-sections 
+#  -MMD 
+#  -flto 
+#  -fno-fat-lto-objects 
+#  -mmcu=atmega2560 
+#  -DF_CPU=16000000L 
+#  -DARDUINO=10612 
+#  -DARDUINO_AVR_MEGA2560 
+#  -DARDUINO_ARCH_AVR   
+#  "-I/home/allan/ESP8266/arduino-1.6.12/hardware/arduino/avr/cores/arduino" 
+#  "-I/home/allan/ESP8266/arduino-1.6.12/hardware/arduino/avr/variants/mega" 
+#  "/home/allan/ESP8266/arduino-1.6.12/hardware/arduino/avr/cores/arduino/WInterrupts.c" 
+#  -o "/tmp/arduino_build_904746/core/WInterrupts.c.o"
 
 LDFLAGS = -nostdlib \
 	-Wl,--gc-sections \
@@ -471,10 +553,22 @@ lst:
 
 $(BUILD_OUT)/$(TARGET).bin: $(BUILD_OUT)/$(TARGET).elf
 	@echo "Building BIN ..."
-	@if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
-		$(ESPTOOL) -eo $(ARCH_HOME)/bootloaders/eboot/eboot.elf -bo $(BUILD_OUT)/$(TARGET).bin \
-			-bm $(FLASH_MODE) -bf $(FLASH_FREQ) -bz $(FLASH_SIZE) \
-			-bs .text -bp 4096 -ec -eo $(BUILD_OUT)/$(TARGET).elf -bs .irom0.text -bs .text -bs .data -bs .rodata -bc -ec; \
+	if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		$(ESPTOOL) -eo $(ARCH_HOME)/bootloaders/eboot/eboot.elf \
+			-bo $(BUILD_OUT)/$(TARGET).bin \
+			-bm $(FLASH_MODE) \
+			-bf $(FLASH_FREQ) \
+			-bz $(FLASH_SIZE) \
+			-bs .text \
+			-bp 4096 \
+			-ec \
+			-eo $(BUILD_OUT)/$(TARGET).elf \
+			-bs .irom0.text \
+			-bs .text \
+			-bs .data \
+			-bs .rodata \
+			-bc \
+			-ec; \
 	else \
 		echo "add code to build BIN for AVR"; \
 	fi
