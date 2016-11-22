@@ -520,12 +520,30 @@ $(BUILD_OUT)/%.cpp.o: %.cpp
 
 # ultimately, use our own ld scripts ...
 $(BUILD_OUT)/$(TARGET).elf: core libs
-	$(LD) $(LDFLAGS) -L$(ARCH_SDK)/lib \
-		-L$(ARCH_SDK)/ld -T$(ARCH_SDK)/ld/eagle.flash.4m.ld \
-		-o $@ -Wl,--start-group $(OBJ_FILES) $(BUILD_OUT)/core/core.a \
-		-lm -lgcc -lhal -lphy -lnet80211 -llwip -lwpa -lmain -lpp -lsmartconfig \
-		-lwps -lcrypto \
-		-Wl,--end-group -L$(BUILD_OUT)
+	if [ $(ARDUINO_ARCH) = "esp8266" ]; then \
+		$(LD) $(LDFLAGS) -L$(ARCH_SDK)/lib \
+			-L$(ARCH_SDK)/ld -T$(ARCH_SDK)/ld/eagle.flash.4m.ld \
+			-o $@ -Wl,--start-group $(OBJ_FILES) $(BUILD_OUT)/core/core.a \
+			-lm -lgcc -lhal -lphy -lnet80211 -llwip -lwpa -lmain -lpp -lsmartconfig \
+			-lwps -lcrypto \
+			-Wl,--end-group -L$(BUILD_OUT); \
+	else \
+		$(LD) $(LDFLAGS) -L$(ARCH_SDK)/lib \
+			-L$(ARCH_SDK)/ld \
+			-o $@ -Wl,--start-group $(OBJ_FILES) $(BUILD_OUT)/core/core.a \
+			-lm -lgcc -lhal -lphy -lnet80211 -llwip -lwpa -lmain -lpp -lsmartconfig \
+			-lwps -lcrypto \
+			-Wl,--end-group -L$(BUILD_OUT); \
+	fi
+
+
+#$(TARGET_ELF): 	$(LOCAL_OBJS) $(CORE_LIB) $(OTHER_OBJS)
+#		$(CC) $(LDFLAGS) -o $@ $(LOCAL_OBJS) $(CORE_LIB) $(OTHER_OBJS) -lc -lm $(LINKER_SCRIPTS)
+
+#$(CORE_LIB):	$(CORE_OBJS) $(LIB_OBJS) $(PLATFORM_LIB_OBJS) $(USER_LIB_OBJS)
+#		$(AR) rcs $@ $(CORE_OBJS) $(LIB_OBJS) $(PLATFORM_LIB_OBJS) $(USER_LIB_OBJS)
+		
+		
 
 size: $(BUILD_OUT)/$(TARGET).elf
 	$(SIZE) -A $(BUILD_OUT)/$(TARGET).elf | \
